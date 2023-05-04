@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import numpy as np
-from bpy.types import Image, Mesh, MeshPolygon
+from bpy.types import Image, Mesh, MeshPolygon, Object
 from mathutils import Vector
 from mathutils.interpolate import poly_3d_calc
 
@@ -28,7 +30,25 @@ class Image:
         self.size = size
 
 
-def getTargetMaterials(debugOutput, target):
+def getTargetMaterials(debugOutput: bool, target: Object) -> list[MaterialProperty]:
+    """Returns a list of MaterialProperty objects for the given target object.
+    The list contains one MaterialProperty object for each material slot of the target object.
+    If a material slot is empty, the corresponding MaterialProperty object will be None.
+    If a material slot is not empty, the corresponding MaterialProperty object will contain the following information:
+
+    Parameters
+    ----------
+    debugOutput : bool
+        If True, debug output will be printed to the console.
+    target : bpy.types.Object
+        The target object.
+
+    Returns
+    -------
+    list of MaterialProperty
+        A list of MaterialProperty objects for the given target object.
+
+    """
     materialCount = len(target.material_slots)
     targetMaterials = np.empty(materialCount, dtype=MaterialProperty)
 
@@ -96,7 +116,26 @@ def getTargetMaterials(debugOutput, target):
     return targetMaterials
 
 
-def getMaterialColorAndMetallic(hit, materialMappings, depsgraph, debugOutput):
+def getMaterialColorAndMetallic(hit: Object, materialMappings: dict) -> MaterialProperty:
+    """
+    Returns the color and metallic factor of the material at the given hit location.
+
+    Parameters
+    ----------
+    hit : bpy.types.Object
+        The hit object.
+    materialMappings : dict
+        A dictionary containing the material mappings for the hit object.
+    depsgraph : bpy.types.Depsgraph
+        The dependency graph.
+    debugOutput : bool
+        If True, debug output will be printed to the console.
+
+    Returns
+    -------
+    MaterialProperty
+        The color and metallic factor of the material at the given hit location.
+    """
     # each face can have an individual material so we need to get the correct one here
 
     materialIndex = materialMappings[hit.target][1][hit.faceIndex]
@@ -170,13 +209,28 @@ def getMaterialColorAndMetallic(hit, materialMappings, depsgraph, debugOutput):
     """
 
 
-# source: https://blender.stackexchange.com/a/139399/95167
-def getUVPixelColor(mesh: Mesh, face_idx: int, point: Vector, image: Image):
+def getUVPixelColor(mesh: Mesh, face_idx: int, point: Vector, image: Image) -> tuple[float, float, float, float]:
     """get RGBA value for point in UV image at specified face index
-    mesh     -- target mesh (must be uv unwrapped)
-    face_idx -- index of face in target mesh to grab texture color from
-    point    -- location (in 3D space on the specified face) to grab texture color from
-    image    -- UV image used as texture for 'mesh' object
+
+    Parameters
+    ----------
+    mesh : Mesh
+        target mesh (must be uv unwrapped)
+    face_idx : int
+        index of face in target mesh to grab texture color from
+    point : Vector
+        location (in 3D space on the specified face) to grab texture color from
+    image : Image
+        UV image used as texture for 'mesh' object
+
+    Returns
+    -------
+    tuple[float, float, float, float]
+        RGBA value at specified point in UV image
+
+    Notes
+    -----
+    source: https://blender.stackexchange.com/a/139399/95167
     """
     # ensure image contains at least one pixel
     assert image is not None and image.pixels is not None and len(image.pixels) > 0
@@ -193,12 +247,24 @@ def getUVPixelColor(mesh: Mesh, face_idx: int, point: Vector, image: Image):
     return rgba
 
 
-def getUVCoord(mesh: Mesh, face: MeshPolygon, point: Vector, imageSize):
+def getUVCoord(mesh: Mesh, face: MeshPolygon, point: Vector, imageSize: tuple[int, int]):
     """returns UV coordinate of target point in source mesh image texture
-    mesh  -- mesh data from source object
-    face  -- face object from mesh
-    point -- coordinate of target point on source mesh
-    image -- image texture for source mesh
+
+    Parameters
+    ----------
+    mesh: Mesh
+        mesh data from source object
+    face: MeshPolygon
+        face object from mesh
+    point: Vector
+        coordinate of target point on source mesh
+    imageSize: tuple[int,int]
+        size of image texture for source mesh
+
+    Returns
+    -------
+    Vector
+        UV coordinate of target point in source mesh image texture
     """
 
     # get active uv layer data
@@ -233,11 +299,27 @@ def getUVCoord(mesh: Mesh, face: MeshPolygon, point: Vector, imageSize):
     return Vector(uv_coord)
 
 
-# reference: https://svn.blender.org/svnroot/bf-extensions/trunk/py/scripts/addons/uv_bake_texture_to_vcols.py
-def getPixel(uv_pixels, imageSize, uv_coord):
+def getPixel(uv_pixels: list[int], imageSize: tuple[int, int], uv_coord: Vector) -> tuple[float, float, float, float]:
     """get RGBA value for specified coordinate in UV image
-    pixels    -- list of pixel data from UV texture image
-    uv_coord  -- UV coordinate of desired pixel value
+
+    Parameters
+    ----------
+    pixels: list[int]
+        list of pixel data from UV texture image
+    imageSize: tuple[int, int]
+        size of UV texture image
+    uv_coord: Vector
+        UV coordinate of desired pixel value
+
+    Returns
+    -------
+    tuple[float, float, float, float]
+        RGBA value of pixel at specified coordinate in UV image
+
+    Notes
+    -----
+    This function is based on the following script:
+    https://svn.blender.org/svnroot/bf-extensions/trunk/py/scripts/addons/uv_bake_texture_to_vcols.py
     """
     # uv_pixels = img.pixels # Accessing pixels directly is quite slow. Copy to new array and pass as an argument for massive performance-gain if you plan to run this function many times on the same image (img.pixels[:]).
 
@@ -251,8 +333,24 @@ def getPixel(uv_pixels, imageSize, uv_coord):
     return (r, g, b, a)
 
 
-def getFaceMaterialMapping(mesh):
-    # https://blender.stackexchange.com/a/52429/95167
+def getFaceMaterialMapping(mesh: Mesh) -> list[int]:
+    """returns a list of material indices for each face in the mesh
+
+    Parameters
+    ----------
+    mesh : bpy.types.Mesh
+        mesh to get material mapping for
+
+    Returns
+    -------
+    list[int]
+        list of material indices for each face in the mesh
+
+    Notes
+    -----
+    This function is based on the following answer:
+    https://blender.stackexchange.com/a/52429/95167
+    """
     numberOfPolygons = len(mesh.polygons.items())
     mapping = np.empty(numberOfPolygons, dtype=int)
 

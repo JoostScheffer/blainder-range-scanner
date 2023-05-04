@@ -1,3 +1,7 @@
+"""this file contains the ray casting logic"""
+
+from __future__ import annotations
+
 import math
 import os
 import time
@@ -10,27 +14,78 @@ from mathutils import Quaternion, Vector
 
 from .. import error_distribution, fresnel, material_helper
 from ..export import exporter
-from . import generic
+from . import generic, hit_info
 
 # refractive index of air
 # see: https://en.wikipedia.org/wiki/List_of_refractive_indices
-iorAir = 1.000293
+# and: https://www.nist.gov/publications/index-refraction-air
+AIR_INDEX_OF_REFRACTION = 1.000293
 
 
 def castRay(
-    targets,
-    trees,
-    origin,
-    direction,
-    maxRange,
-    materialMappings,
-    depsgraph,
-    debugLines,
-    debugOutput,
-    currentIOR,
-    isInsideMaterial,
-    remainingReflectionDepth,
-):
+    targets: list[bpy.types.Object],
+    trees: list[bpy.types.Object],
+    origin: Vector,
+    direction: Vector,
+    maxRange: float,
+    materialMappings: dict,
+    depsgraph: bpy.types.Depsgraph,
+    debugLines: list[generic.DebugLine],
+    debugOutput: bool,
+    currentIOR: float,
+    isInsideMaterial: bool,
+    remainingReflectionDepth: int,
+) -> hit_info.HitInfo | None:
+    r"""Casts a ray from the given origin in the given direction and returns the closest hit.
+
+    Parameters
+    ----------
+    targets : list of bpy.types.Object
+        The objects that can be hit.
+    trees : list of BVHTree
+        The BVH trees of the objects that can be hit.
+    origin : Vector
+        The origin of the ray.
+    direction : Vector
+        The direction of the ray.
+    maxRange : float
+        The maximum range of the ray in meters.
+    materialMappings : dict of str to MaterialMapping
+        The material mappings of the scene.
+    depsgraph : bpy.types.Depsgraph
+        The dependency graph of the scene.
+    debugLines : list of DebugLine
+        The debug lines.
+    debugOutput : bool
+        Whether to output debug information.
+    currentIOR : float
+        The current index of refraction.
+    isInsideMaterial : bool
+        Whether the ray is currently inside a material.
+    remainingReflectionDepth : int
+        The remaining reflection depth. How often the ray can  be reflected.
+
+    Returns
+    -------
+    HitInfo: None or hit_info.HitInfo
+        The closest hit.
+
+    Notes
+    -----
+    Outline of this function:
+    1. Cast the ray from the origin in the given direction
+    2. Check if the ray hit something
+    3. if the ray hit something, check if the ray hit a transparent object
+    4. if the ray hit a transparent object, refract the ray and cast it again
+    5. Check if the ray hit a reflective object
+    6. if the ray hit a reflective object, reflect the ray and cast it again
+    7. return the closest hit
+
+    See Also
+    --------
+    generic.getClosestHit
+    castRay
+    """
     if remainingReflectionDepth < 0:
         return None
 
@@ -237,9 +292,9 @@ def castRay(
 
                 # are we going grom air to medium or from medium to air?
                 if isInsideMaterial:
-                    n = materialProperty.ior / iorAir
+                    n = materialProperty.ior / AIR_INDEX_OF_REFRACTION
                 else:
-                    n = iorAir / materialProperty.ior
+                    n = AIR_INDEX_OF_REFRACTION / materialProperty.ior
 
                 # calculate new direction vector
                 # see: http://www.starkeffects.com/snells-law-vector.shtml
@@ -309,7 +364,7 @@ def castRay(
 
 
 def performScan(
-    context,
+    _context,
     scannerType,
     scannerObject,
     reflectivityLower,
@@ -329,9 +384,9 @@ def performScan(
     firstFrame,
     lastFrame,
     frameNumber,
-    rotationsPerSecond,
+    _rotationsPerSecond,
     addNoise,
-    noiseType,
+    _noiseType,
     mu,
     sigma,
     addConstantNoise,
@@ -363,14 +418,145 @@ def performScan(
     measureTime,
     singleRay,
     destinationObject,
-    targetObject,
+    _targetObject,
     targets,
     materialMappings,
     categoryIDs,
     partIDs,
     trees,
     depsgraph,
-):
+) -> None | set[str]:
+    r"""Performs a scan with the given scanner object and the given parameters.
+
+    Parameters
+    ----------
+    _context : bpy.context
+        The context of the blender scene.
+    scannerType : str
+        The type of the scanner. Either "static" or "rotating".
+    scannerObject : bpy.types.Object
+        The scanner object.
+    reflectivityLower : float
+        The lower bound of the reflectivity.
+    distanceLower : float
+        The lower bound of the distance.
+    reflectivityUpper : float
+        The upper bound of the reflectivity.
+    distanceUpper : float
+        The upper bound of the distance.
+    maxReflectionDepth : int
+        The maximum number of reflections a ray can have.
+    intervalStart : float
+        The start angle of the interval.
+    intervalEnd : float
+        The end angle of the interval.
+    fovX : float
+        The horizontal field of view.
+    stepsX : int
+        The number of steps in x direction.
+    fovY : float
+        The vertical field of view.
+    stepsY : int
+        The number of steps in y direction.
+    percentage : float
+        The percentage of the scan that is performed.
+    scannedValues : list
+        The list of scanned values.
+    startIndex : int
+        The index of the first scanned value.
+    firstFrame : int
+        The first frame of the scan.
+    lastFrame : int
+        The last frame of the scan.
+    frameNumber : int
+        The current frame number.
+    _rotationsPerSecond : float
+        The number of rotations per second.
+    addNoise : bool
+        Whether to add noise to the scan.
+    _noiseType : str
+        The type of the noise.
+    mu : float
+        The mean of the noise.
+    sigma : float
+        The standard deviation of the noise.
+    addConstantNoise : bool
+        Whether to add constant noise to the scan.
+    noiseAbsoluteOffset : float
+        The absolute offset of the noise.
+    noiseRelativeOffset : float
+        The relative offset of the noise.
+    simulateRain : bool
+        Whether to simulate rain.
+    rainfallRate : float
+        The rainfall rate.
+    simulateDust : bool
+        Whether to simulate dust.
+    particleRadius : float
+        The radius of the dust particles.
+    particlesPcm : float
+        The number of particles per cubic meter.
+    dustCloudLength : float
+        The length of the dust cloud.
+    dustCloudStart : float
+        The start of the dust cloud.
+    addMesh : bool
+        Whether to add a mesh to the scan.
+    exportLAS : bool
+        Whether to export the scan as LAS file.
+    exportHDF : bool
+        Whether to export the scan as HDF file.
+    exportCSV : bool
+        Whether to export the scan as CSV file.
+    exportPLY : bool
+        Whether to export the scan as PLY file.
+    exportRenderedImage : bool
+        Whether to export the rendered image.
+    exportSegmentedImage : bool
+        Whether to export the segmented image.
+    exportPascalVoc : bool
+        Whether to export the scan as Pascal VOC file.
+    exportDepthmap : bool
+        Whether to export the depthmap.
+    depthMinDistance : float
+        The minimum distance of the depthmap.
+    depthMaxDistance : float
+        The maximum distance of the depthmap.
+    dataFilePath : str
+        The path to the data folder.
+    dataFileName : str
+        The name of the data file.
+    debugLines : bool
+        Whether to draw debug lines.
+    debugOutput : bool
+        Whether to output debug information.
+    outputProgress : bool
+        Whether to output the progress.
+    measureTime : bool
+        Whether to measure the time.
+    singleRay : bool
+        Whether to use a single ray.
+    destinationObject : bpy.types.Object
+        The destination object.
+    _targetObject : bpy.types.Object
+        The target object.
+    targets : list
+        The list of target objects.
+    materialMappings : list
+        The list of material mappings.
+    categoryIDs : list
+        The list of category IDs.
+    partIDs : list
+        The list of part IDs.
+    trees : list
+        The list of trees.
+    depsgraph : bpy.types.Depsgraph
+        The dependency graph.
+
+    Returns
+    -------
+    None | set[str]
+    """
     if measureTime:
         startTime = time.time()
 
@@ -496,7 +682,7 @@ def performScan(
                 depsgraph,
                 debugLines,
                 debugOutput,
-                iorAir,
+                AIR_INDEX_OF_REFRACTION,
                 False,
                 maxReflectionDepth - 1,
             )

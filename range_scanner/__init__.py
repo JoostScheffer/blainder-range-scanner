@@ -1,7 +1,9 @@
 # context.area: VIEW_3D
 
-# add-on skeleton taken from: https://blender.stackexchange.com/a/57332
 
+from .ui import user_interface
+
+# add-on skeleton taken from: https://blender.stackexchange.com/a/57332
 bl_info = {
     "name": "range_scanner",
     "author": "Lorenzo Neumann",
@@ -13,8 +15,6 @@ bl_info = {
     "category": "3D View",
     "wiki_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner",
 }
-
-from .ui import user_interface
 
 
 # register all needed classes on startup

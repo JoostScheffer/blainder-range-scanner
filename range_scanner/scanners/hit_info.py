@@ -1,5 +1,26 @@
+import bpy
+from mathutils import Vector
+
+
 class HitInfo:
-    def __init__(self, location, faceNormal, faceIndex, distance, target):
+    r"""Stores information about a hit."""
+
+    def __init__(self, location: Vector, faceNormal: Vector, faceIndex: int, distance: float, target: bpy.types.Object):
+        r"""Initializes a new instance of the HitInfo class.
+
+        Parameters
+        ----------
+        location : Vector
+            The location of the hit.
+        faceNormal : Vector
+            The normal of the face that was hit.
+        faceIndex : int
+            The index of the face that was hit.
+        distance : float
+            The distance from the origin to the hit.
+        target : Object
+            The object that was hit.
+        """
         self.location = location
         self.faceNormal = faceNormal
         self.faceIndex = faceIndex

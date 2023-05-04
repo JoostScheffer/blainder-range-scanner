@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import time
 from enum import Enum
@@ -17,7 +19,7 @@ ScannerType = Enum("ScannerType", "static rotating sideScan")
 
 
 def updateProgress(job_title: str, progress: float):
-    """print progress bar
+    r"""print progress bar
 
     Parameters
     ----------
@@ -40,7 +42,7 @@ def updateProgress(job_title: str, progress: float):
 
 
 def addLine(v1: Vector, v2: Vector):
-    """Add a single line between two vertices
+    r"""Add a single line between two vertices
 
     Parameters
     ----------
@@ -75,7 +77,7 @@ def addLine(v1: Vector, v2: Vector):
 
 
 def getTargetIndices(targets: list[dict[str, str]], debugOutput: bool) -> tuple[dict[str, int], dict[str, int]]:
-    """Get the indices for the targets
+    r"""Get the indices for the targets
 
     Parameters
     ----------
@@ -144,7 +146,7 @@ def getTargetIndices(targets: list[dict[str, str]], debugOutput: bool) -> tuple[
 
 
 def addMeshToScene(name: str, values: list, useNoiseLocation: bool):
-    """Adds a mesh to the scene with the given name and values.
+    r"""Adds a mesh to the scene with the given name and values.
 
     Parameters
     ----------
@@ -193,7 +195,7 @@ def getClosestHit(
     debugOutput: bool,
     debugLines: bool,
 ) -> hit_info.HitInfo | None:
-    """Performs a ray cast and returns the closest hit.
+    r"""Performs a ray cast and returns the closest hit.
     If there is no hit, None is returned.
 
     Parameters
@@ -269,7 +271,7 @@ def getClosestHit(
 
 
 def removeInvalidCharatersFromFileName(name: str) -> str:
-    """Removes invalid characters from a file name.
+    r"""Removes invalid characters from a file name.
 
     Parameters
     ----------
@@ -291,7 +293,7 @@ def removeInvalidCharatersFromFileName(name: str) -> str:
 
 
 def startScan(context: bpy.context, dependencies_installed: bool, properties: bpy.types.PropertyGroup, objectName: str):
-    """Starts the scan process. This function is called from the UI and from the command line.
+    r"""Starts the scan process. This function is called from the UI and from the command line.
 
     Parameters
     ----------
@@ -308,10 +310,10 @@ def startScan(context: bpy.context, dependencies_installed: bool, properties: bp
     if objectName is None:
         cleanedFileName = removeInvalidCharatersFromFileName(properties.dataFileName)
     else:
-        cleanedFileName = removeInvalidCharatersFromFileName(f"{properties.dataFileName}_{objectName}")
+        cleanedFileName = removeInvalidCharatersFromFileName("{0}_{1}".format(properties.dataFileName, objectName))
 
     if not cleanedFileName == properties.dataFileName:
-        print("WARNING: File name contains invalid characters. New file name: %s" % cleanedFileName)
+        print("WARNING: File name contains invalid characters. New file name: {0}".format(cleanedFileName))
 
     if properties.singleRay:
         allTargets = [properties.targetObject]
@@ -663,7 +665,7 @@ def startScan(context: bpy.context, dependencies_installed: bool, properties: bp
 
 
 def getBVHTrees(trees: dict, targets: list, depsgraph: bpy.types.Depsgraph) -> dict:
-    """Get the BVH trees for the given targets. If the target is already in the tree map, the
+    r"""Get the BVH trees for the given targets. If the target is already in the tree map, the
     old tree will be used if the object did not change its world matrix.
 
     Parameters
