@@ -40,6 +40,8 @@ bl_info = {
 }
 
 # define location of UI panels
+
+
 class MAIN_PANEL:
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -140,7 +142,8 @@ def install_and_import_module(module, importName):
         print(f"Installing {module}")
 
         # Try to install the package. This may fail with subprocess.CalledProcessError
-        subprocess.run([sys.executable, "-m", "pip", "install", module], check=True)
+        subprocess.run([sys.executable, "-m", "pip",
+                       "install", module], check=True)
     finally:
         # Always restore the original environment variables
         os.environ.clear()
@@ -155,7 +158,7 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
     bl_idname = "wm.install_dependencies"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         # Deactivate when dependencies have been installed
         return not dependencies_installed
 
@@ -164,7 +167,8 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
             install_pip()
 
             requirementsPath = os.path.join(
-                pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt"
+                pathlib.Path(
+                    __file__).parent.parent.absolute(), "requirements.txt"
             )
             print("Reading dependencies from {0}".format(requirementsPath))
             requirementsFile = open(requirementsPath, "r")
@@ -188,9 +192,11 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
                 if importName is None:
                     importName = name
 
-                print(f"Checking {name}: version {version}, import {importName}")
+                print(
+                    f"Checking {name}: version {version}, import {importName}")
 
-                install_and_import_module(module=stripped, importName=importName)
+                install_and_import_module(
+                    module=stripped, importName=importName)
 
                 importName = None
         except (subprocess.CalledProcessError, ImportError) as err:
@@ -208,7 +214,7 @@ class EXAMPLE_PT_DEPENDENCIES_PANEL(MAIN_PANEL, Panel):
     bl_label = "Missing dependencies"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return not dependencies_installed
 
     def draw(self, context):
@@ -239,7 +245,7 @@ class WM_OT_LOAD_PRESET(Operator):
     bl_description = "Loads all values for the selected scanner type"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return True
 
     def execute(self, context):
@@ -355,7 +361,8 @@ class WM_OT_LOAD_PRESET(Operator):
                             speed = item["speed"]
                             density = item["density"]
 
-                            addItemToList(scene, depth, speed, density, scene.custom)
+                            addItemToList(scene, depth, speed,
+                                          density, scene.custom)
 
                         # cleanup list
                         removeDuplicatesFromList(scene, scene.custom)
@@ -503,7 +510,8 @@ class ScannerProperties(PropertyGroup):
         default=1,
     )
 
-    frameEnd: IntProperty(name="Frame end", description="The last frame to be rendered", default=10)
+    frameEnd: IntProperty(
+        name="Frame end", description="The last frame to be rendered", default=10)
 
     frameStep: IntProperty(
         name="Frame step",
@@ -719,7 +727,8 @@ class ScannerProperties(PropertyGroup):
     )
 
     # NOISE
-    addNoise: BoolProperty(name="Add noise", description="Enable or disable noise", default=True)
+    addNoise: BoolProperty(
+        name="Add noise", description="Enable or disable noise", default=True)
 
     noiseType: EnumProperty(
         name="Noise type",
@@ -956,8 +965,10 @@ class ScannerProperties(PropertyGroup):
         description="Select scanner type",
         items=[
             (generic.ScannerType.static.name, generic.ScannerType.static.name, ""),
-            (generic.ScannerType.rotating.name, generic.ScannerType.rotating.name, ""),
-            (generic.ScannerType.sideScan.name, generic.ScannerType.sideScan.name, ""),
+            (generic.ScannerType.rotating.name,
+             generic.ScannerType.rotating.name, ""),
+            (generic.ScannerType.sideScan.name,
+             generic.ScannerType.sideScan.name, ""),
         ],
     )
 
@@ -1147,7 +1158,8 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
             transZ = random.uniform(properties.minTransZ, properties.maxTransZ)
 
             # add the values
-            properties.swapObject.location = oldLocation + Vector((transX, transY, transZ))
+            properties.swapObject.location = oldLocation + \
+                Vector((transX, transY, transZ))
 
             rotX = random.uniform(properties.minRotX, properties.maxRotX)
             rotY = random.uniform(properties.minRotY, properties.maxRotY)
@@ -1165,26 +1177,32 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
 
             # if uniform sclaing is enabled, all values should be scaled the same
             if properties.uniformScaling:
-                scaleAll = random.uniform(properties.minScaleAll, properties.maxScaleAll)
+                scaleAll = random.uniform(
+                    properties.minScaleAll, properties.maxScaleAll)
                 properties.swapObject.scale[0] = oldScale[0] * scaleAll
                 properties.swapObject.scale[1] = oldScale[1] * scaleAll
                 properties.swapObject.scale[2] = oldScale[2] * scaleAll
             else:
-                scaleX = random.uniform(properties.minScaleX, properties.maxScaleX)
-                scaleY = random.uniform(properties.minScaleY, properties.maxScaleY)
-                scaleZ = random.uniform(properties.minScaleZ, properties.maxScaleZ)
+                scaleX = random.uniform(
+                    properties.minScaleX, properties.maxScaleX)
+                scaleY = random.uniform(
+                    properties.minScaleY, properties.maxScaleY)
+                scaleZ = random.uniform(
+                    properties.minScaleZ, properties.maxScaleZ)
                 properties.swapObject.scale[0] = oldScale[0] * scaleX
                 properties.swapObject.scale[1] = oldScale[1] * scaleY
                 properties.swapObject.scale[2] = oldScale[2] * scaleZ
 
             generic.startScan(
-                context, dependencies_installed, properties, "%s_mod_%d" % (objectName, i)
+                context, dependencies_installed, properties, "%s_mod_%d" % (
+                    objectName, i)
             )
 
         # reset the matrix so that the next run can start from zero
         properties.swapObject.matrix_world = matrixWorld
     else:
-        generic.startScan(context, dependencies_installed, properties, objectName)
+        generic.startScan(context, dependencies_installed,
+                          properties, objectName)
 
 
 def performScan(context, dependencies_installed, properties):
@@ -1298,7 +1316,8 @@ def performScan(context, dependencies_installed, properties):
             # delete the imported object as we copied it and don't need it anymore
             bpy.ops.object.delete({"selected_objects": [importedObject]})
 
-            modifyAndScan(context, dependencies_installed, properties, fileName)
+            modifyAndScan(context, dependencies_installed,
+                          properties, fileName)
     else:
         modifyAndScan(context, dependencies_installed, properties, None)
 
@@ -1720,7 +1739,7 @@ class OBJECT_PT_MAIN_PANEL(MAIN_PANEL, Panel):
     bl_idname = "OBJECT_PT_MAIN_PANEL"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None and dependencies_installed
 
     def draw(self, context):
@@ -1743,7 +1762,7 @@ class OBJECT_PT_PRESET_PANEL(MAIN_PANEL, Panel):
     bl_label = "Presets"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -1764,7 +1783,7 @@ class OBJECT_PT_REFLECTIVITY_PANEL(MAIN_PANEL, Panel):
     bl_label = "Reflectivity"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return (
             context.object is not None
             and context.scene.scannerProperties.scannerType != generic.ScannerType.sideScan.name
@@ -1794,7 +1813,7 @@ class OBJECT_PT_SCANNER_PANEL(MAIN_PANEL, Panel):
     bl_label = "Scanner"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -1907,7 +1926,7 @@ class OBJECT_PT_ANIMATION_PANEL(MAIN_PANEL, Panel):
     bl_label = "Animation"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -1931,7 +1950,7 @@ class OBJECT_PT_OBJECT_MODIFICATION_PANEL(MAIN_PANEL, Panel):
     bl_label = "Object Modification"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -2017,7 +2036,7 @@ class OBJECT_PT_NOISE_PANEL(MAIN_PANEL, Panel):
     bl_label = "Noise"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -2047,7 +2066,7 @@ class OBJECT_PT_WEATHER_PANEL(MAIN_PANEL, Panel):
     bl_label = "Weather simulation"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return (
             context.object is not None
             and context.scene.scannerProperties.scannerType != generic.ScannerType.sideScan.name
@@ -2077,7 +2096,7 @@ class OBJECT_PT_VISUALIZATION_PANEL(MAIN_PANEL, Panel):
     bl_label = "Visualization"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -2093,7 +2112,7 @@ class OBJECT_PT_EXPORT_PANEL(MAIN_PANEL, Panel):
     bl_label = "Export"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -2138,7 +2157,7 @@ class OBJECT_PT_DEBUG_PANEL(MAIN_PANEL, Panel):
     bl_label = "DEBUG"
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -2408,7 +2427,8 @@ def register():
         return
 
     # load scanner config file
-    configPath = os.path.join(pathlib.Path(__file__).parent.absolute(), "presets.yaml")
+    configPath = os.path.join(pathlib.Path(
+        __file__).parent.absolute(), "presets.yaml")
 
     print("Loading config file from %s ..." % configPath)
 
