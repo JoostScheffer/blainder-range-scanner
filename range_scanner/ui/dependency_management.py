@@ -24,6 +24,7 @@ from bpy.utils import unregister_class
 from mathutils import Euler, Vector
 
 from ..scanners import generic
+from .base_classes import MAIN_PANEL
 
 #############################################################
 #                                                           #
@@ -56,8 +57,7 @@ dependencies_installed = False
 # def import_module(module_name, global_name=None):
 # make global_name an optional parameter
 def import_module(module_name: str, global_name: str | None = None):
-    """
-    Import a module.
+    r"""Import a module.
 
     Parameters
     ----------
@@ -85,13 +85,22 @@ def import_module(module_name: str, global_name: str | None = None):
 
 
 def install_pip():
-    """
-    Installs pip if not already present. Please note that ensurepip.bootstrap() also calls pip, which adds the
+    r"""Installs pip if not already present.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If the installation fails.
+
+    Notes
+    -----
+    Please note that `ensurepip.bootstrap()` also calls pip, which adds the
     environment variable PIP_REQ_TRACKER. After ensurepip.bootstrap() finishes execution, the directory doesn't exist
     anymore. However, when subprocess is used to call pip, in order to install a package, the environment variables
     still contain PIP_REQ_TRACKER with the now nonexistent path. This is a problem since pip checks if PIP_REQ_TRACKER
     is set and if it is, attempts to use it as temp directory. This would result in an error because the
     directory can't be found. Therefore, PIP_REQ_TRACKER needs to be removed from environment variables.
+
     """
     try:
         # Check if pip is already installed
@@ -158,7 +167,55 @@ def install_and_import_module(module: str, importName: str):
     import_module(importName)
 
 
+def parse_requirements_file(filename: str) -> list[tuple[str, str]]:
+    """Parses a requirements file and returns a list of tuples containing the package name and version.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the requirements file.
+
+    Returns
+    -------
+    list[tuple[str,str]]
+        List of tuples containing the package name and version.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file can't be found.
+    """
+
+    with open(filename, "r") as requirementsFile:
+        requirements = requirementsFile.readlines()
+
+    importName = None
+    parsedRequirements = []
+
+    # Strips the newline character
+    for requirement in requirements:
+        stripped = requirement.strip()
+
+        if stripped.startswith("#/"):
+            importName = stripped.split("#/")[1]
+            continue
+
+        if stripped.startswith("#") or not stripped:
+            continue
+
+        parsedRequirements.append((stripped, importName))
+
+    return parsedRequirements
+
+
 class WM_OT_INSTALL_DEPENDENCIES(Operator):
+    r"""Installs the dependencies for this add-on.
+
+    Notes
+    -----
+    This operator is only available when the dependencies have not been installed yet.
+    """
+
     bl_label = "Install dependencies"
     bl_idname = "wm.install_dependencies"
 
@@ -167,14 +224,15 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
         # Deactivate when dependencies have been installed
         return not dependencies_installed
 
-    def execute(self, context):
+    def execute(self, context) -> set[str] | None:
         try:
+            # Install pip if not already present
             install_pip()
 
             requirementsPath = os.path.join(pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt")
-            print("Reading dependencies from {0}".format(requirementsPath))
-            requirementsFile = open(requirementsPath, "r")
-            requirements = requirementsFile.readlines()
+            print(f"Reading dependencies from {requirementsPath}")
+            with open(requirementsPath, "r") as requirementsFile:
+                requirements = requirementsFile.readlines()
 
             importName = None
 
@@ -211,6 +269,9 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
 
 
 class EXAMPLE_PT_DEPENDENCIES_PANEL(MAIN_PANEL, Panel):
+    r"""Panel to display a message if dependencies are missing.
+    """
+
     bl_label = "Missing dependencies"
 
     @classmethod
@@ -225,8 +286,9 @@ class EXAMPLE_PT_DEPENDENCIES_PANEL(MAIN_PANEL, Panel):
             "Click the button below to start (requires to run blender",
             "with administrative privileges on Windows).",
         ]
-
         for line in lines:
             layout.label(text=line)
 
+        # Add button to install dependencies
+        # This will call the execute method of the WM_OT_INSTALL_DEPENDENCIES operator
         layout.operator("wm.install_dependencies")
