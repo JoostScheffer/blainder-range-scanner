@@ -22,6 +22,7 @@ from mathutils import Euler, Vector
 
 from ..scanners import generic
 from .base_classes import MAIN_PANEL
+from .dependency_management import dependencies_installed, import_module, WM_OT_INSTALL_DEPENDENCIES, EXAMPLE_PT_DEPENDENCIES_PANEL,
 
 # add-on skeleton taken from: https://blender.stackexchange.com/a/57332
 

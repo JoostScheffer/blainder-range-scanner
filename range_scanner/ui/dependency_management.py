@@ -3,27 +3,11 @@ from __future__ import annotations
 import importlib
 import os
 import pathlib
-import random
 import subprocess
 import sys
-import time
-from math import radians
 
-import bpy
-from bpy.props import (
-    BoolProperty,
-    CollectionProperty,
-    EnumProperty,
-    FloatProperty,
-    IntProperty,
-    PointerProperty,
-    StringProperty,
-)
-from bpy.types import Operator, Panel, PropertyGroup, UIList
-from bpy.utils import unregister_class
-from mathutils import Euler, Vector
+from bpy.types import Operator, Panel
 
-from ..scanners import generic
 from .base_classes import MAIN_PANEL
 
 #############################################################
@@ -269,8 +253,7 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
 
 
 class EXAMPLE_PT_DEPENDENCIES_PANEL(MAIN_PANEL, Panel):
-    r"""Panel to display a message if dependencies are missing.
-    """
+    r"""Panel to display a message if dependencies are missing."""
 
     bl_label = "Missing dependencies"
 
