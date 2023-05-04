@@ -5,20 +5,31 @@ from enum import Enum
 import bmesh
 import bpy
 import numpy as np
+from mathutils import Vector
 from mathutils.bvhtree import BVHTree
-
-from . import hit_info
-
-ScannerType = Enum("ScannerType", "static rotating sideScan")
 
 from .. import material_helper
 from ..export import exporter
 from ..scanners import generic
-from . import lidar, sonar
+from . import hit_info, lidar, sonar
+
+ScannerType = Enum("ScannerType", "static rotating sideScan")
 
 
-# source: https://blender.stackexchange.com/a/30739/95167
-def updateProgress(job_title, progress):
+def updateProgress(job_title: str, progress: float):
+    """print progress bar
+
+    Parameters
+    ----------
+    job_title : str
+        Title of the job
+    progress : float
+        Progress of the job. Must be between 0 and 1.
+
+    Notes
+    -----
+    source: https://blender.stackexchange.com/a/30739/95167
+    """
     length = 20  # modify this to change the length
     block = int(round(length * progress))
     msg = "\r{0}: [{1}] {2}%".format(job_title, "#" * block + "-" * (length - block), round(progress * 100, 2))
@@ -28,7 +39,16 @@ def updateProgress(job_title, progress):
     sys.stdout.flush()
 
 
-def addLine(v1, v2):
+def addLine(v1: Vector, v2: Vector):
+    """Add a single line between two vertices
+
+    Parameters
+    ----------
+    v1 : Vector
+        First vertex
+    v2 : Vector
+        Second vertex
+    """
     mesh = bpy.data.meshes.new(name="mesh object")
 
     bm = bmesh.new()
@@ -54,7 +74,24 @@ def addLine(v1, v2):
     scene.collection.objects.link(obj)
 
 
-def getTargetIndices(targets, debugOutput):
+def getTargetIndices(targets: list[dict[str, str]], debugOutput: bool) -> tuple[dict[str, int], dict[str, int]]:
+    """Get the indices for the targets
+
+    Parameters
+    ----------
+    targets : list
+        List of targets
+    debugOutput : bool
+        If true, debug output is printed
+
+    Returns
+    -------
+    categoryIDs : dict[str, int]
+        Dictionary with the categoryIDs
+    partIDs : dict[str, int]
+        Dictionary with the partIDs
+    """
+
     # we need indices to store which point belongs to which object
     # there are to types of indices:
     #   TOP LEVEL: the category of the top level object in our scene, e.g. chair, table
@@ -106,12 +143,23 @@ def getTargetIndices(targets, debugOutput):
     return (categoryIDs, partIDs)
 
 
-def addMeshToScene(name, values, useNoiseLocation):
+def addMeshToScene(name: str, values: list, useNoiseLocation: bool):
+    """Adds a mesh to the scene with the given name and values.
+
+    Parameters
+    ----------
+    name : str
+        name of the mesh
+    values : list
+        list of HitInfo objects
+    useNoiseLocation : bool
+        if True, the noiseLocation of the HitInfo objects is used, otherwise the location is used
+    """
     # Create new mesh to store all measurements as points
     mesh = bpy.data.meshes.new(name="created mesh")
     bm = bmesh.new()
 
-    # iterate over all possible hits
+    # iterate over all possible hits and add them to the mesh
     if useNoiseLocation:
         for hit in values:
             bm.verts.new((hit.noiseLocation.x, hit.noiseLocation.y, hit.noiseLocation.z))
@@ -136,7 +184,40 @@ def addMeshToScene(name, values, useNoiseLocation):
     scene.collection.objects.link(obj)
 
 
-def getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debugLines):
+def getClosestHit(
+    targets: list[bpy.types.Object],
+    trees: dict,
+    origin: Vector,
+    direction: Vector,
+    maxRange: float,
+    debugOutput: bool,
+    debugLines: bool,
+) -> hit_info.HitInfo | None:
+    """Performs a ray cast and returns the closest hit.
+    If there is no hit, None is returned.
+
+    Parameters
+    ----------
+    targets : list of bpy.types.Object
+        The targets to scan.
+    trees : dict
+        A dictionary containing the BVH trees for each target.
+    origin : mathutils.Vector
+        The origin of the ray.
+    direction : mathutils.Vector
+        The direction of the ray.
+    maxRange : float
+        The maximum range of the ray.
+    debugOutput : bool
+        Whether to print debug output.
+    debugLines : bool
+        Whether to draw debug lines.
+
+    Returns
+    -------
+    hit_info
+        The closest hit.
+    """
     closestLocation = None
     closestFaceNormal = None
     closestFaceIndex = None
@@ -187,19 +268,47 @@ def getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debu
         return None
 
 
-# remove invalid characters
-# source https://blender.stackexchange.com/a/104877
-def removeInvalidCharatersFromFileName(name):
+def removeInvalidCharatersFromFileName(name: str) -> str:
+    """Removes invalid characters from a file name.
+
+    Parameters
+    ----------
+    name : str
+        The file name to clean up
+
+    Returns
+    -------
+    str
+        The cleaned up file name
+
+    Notes
+    -----
+    source: https://blender.stackexchange.com/a/104877
+    """
     for char in " !@#$%^&*(){}:\";'[]<>,.\\/?":
         name = name.replace(char, "_")
     return name.lower().strip()
 
 
-def startScan(context, dependencies_installed, properties, objectName):
+def startScan(context: bpy.context, dependencies_installed: bool, properties: bpy.types.PropertyGroup, objectName: str):
+    """Starts the scan process. This function is called from the UI and from the command line.
+
+    Parameters
+    ----------
+    context : bpy.context
+        The context of the current scene
+    dependencies_installed : bool
+        True if all dependencies are installed, False otherwise
+    properties : bpy.types.PropertyGroup
+        The properties of the current scene
+    objectName : str
+        The name of the object to scan. If None, all visible objects are scanned.
+    """
+
     if objectName is None:
         cleanedFileName = removeInvalidCharatersFromFileName(properties.dataFileName)
     else:
-        cleanedFileName = removeInvalidCharatersFromFileName("%s_%s" % (properties.dataFileName, objectName))
+        cleanedFileName = removeInvalidCharatersFromFileName(f"{properties.dataFileName}_{objectName}")
 
     if not cleanedFileName == properties.dataFileName:
         print("WARNING: File name contains invalid characters. New file name: %s" % cleanedFileName)
@@ -553,12 +662,29 @@ def startScan(context, dependencies_installed, properties, objectName):
         print("Scan time: %s s" % (time.time() - startTime))
 
 
-def getBVHTrees(trees, targets, depsgraph):
+def getBVHTrees(trees: dict, targets: list, depsgraph: bpy.types.Depsgraph) -> dict:
+    """Get the BVH trees for the given targets. If the target is already in the tree map, the
+    old tree will be used if the object did not change its world matrix.
+
+    Parameters
+    ----------
+    trees : dict
+        The tree map to use.
+    targets : list
+        The targets to get the trees for.
+    depsgraph : bpy.types.Depsgraph
+        The dependency graph to use.
+
+    Returns
+    -------
+    dict
+        The tree map with the new trees.
+    """
     for target in targets:
         # check if the target is already in the tree map
         if target in trees:
             # if so, get the old values
-            (existingTree, matrix_world) = trees[target]
+            (_existingTree, matrix_world) = trees[target]
 
             # if the object did not change its world matrix, we
             # don't have to recompute the tree

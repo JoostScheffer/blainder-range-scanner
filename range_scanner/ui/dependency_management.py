@@ -63,8 +63,8 @@ def import_module(module_name: str, global_name: str | None = None):
     if global_name is None:
         global_name = module_name
 
-    # Attempt to import the module and assign it to globals dictionary. This allow to access the module under
-    # the given name, just like the regular import would.
+    # Attempt to import the module and assign it to globals dictionary.
+    # This allow to access the module under the given name, just like the regular import would.
     globals()[global_name] = importlib.import_module(module_name)
 
 

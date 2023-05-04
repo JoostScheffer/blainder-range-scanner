@@ -1,4 +1,27 @@
 # context.area: VIEW_3D
+"""
+This file contains the user interface for the range scanner add-on.
+It is responsible for the following tasks:
+    - registering the panels
+    - registering the operators
+    - registering the properties
+    - defining the layout of the panels
+    - defining the layout of the properties
+    - defining the layout of the operators
+
+The user interface is split into two parts:
+    - the main panel (visible when the add-on is enabled)
+    - the properties panel (visible when a scanner is selected)
+
+The main panel is defined in the MAIN_PANEL class.
+It is located in the range_scanner/ui/base_classes.py file.
+
+The scanner properties are the properties that are specific to the selected scanner type.
+They are defined in the scanner type's module.
+
+The scanner settings are the properties that are shared between all scanner types.
+They are defined in this file under the ScannerSettings class.
+"""
 
 import os
 import pathlib
@@ -22,24 +45,28 @@ from mathutils import Euler, Vector
 
 from ..scanners import generic
 from .base_classes import MAIN_PANEL
-from .dependency_management import dependencies_installed, import_module, WM_OT_INSTALL_DEPENDENCIES, EXAMPLE_PT_DEPENDENCIES_PANEL,
+from .dependency_management import (
+    EXAMPLE_PT_DEPENDENCIES_PANEL,
+    WM_OT_INSTALL_DEPENDENCIES,
+    dependencies_installed,
+    import_module,
+)
 
 # add-on skeleton taken from: https://blender.stackexchange.com/a/57332
 
 # metainfo https://wiki.blender.org/wiki/Process/Addons/Guidelines/metainfo
 bl_info = {
-    "name": "range_scanner", # name of the add-on
-    "description": "Range scanner simulation for Blender", # used for the tooltip and addons list
-    "author": "Lorenzo Neumann", # original author of the add-on
-    "blender": (3, 4, 0), # blender version
-    "version": (0, 1, 0), # major, minor, patch
-    "location": "View3D > Scanner", # where to find it in the UI
-    "doc_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner", # documentation URL
-    "warning": "", # used for warning icon and text in addons panel
-    "category": "3D View", # category in the addons panel
+    "name": "range_scanner",  # name of the add-on
+    "description": "Range scanner simulation for Blender",  # used for the tooltip and addons list
+    "author": "Lorenzo Neumann",  # original author of the add-on
+    "blender": (3, 4, 0),  # blender version
+    "version": (0, 1, 0),  # major, minor, patch
+    "location": "View3D > Scanner",  # where to find it in the UI
+    "doc_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner",  # documentation URL
+    "warning": "",  # used for warning icon and text in addons panel
+    "category": "3D View",  # category in the addons panel
     "support": "COMMUNITY",
 }
-
 
 
 #############################################################
@@ -50,6 +77,8 @@ bl_info = {
 
 
 class WM_OT_LOAD_PRESET(Operator):
+    """Loads all values for the selected scanner type from the presets file"""
+
     bl_label = "Load preset"
     bl_idname = "wm.load_preset"
     bl_description = "Loads all values for the selected scanner type"
@@ -215,7 +244,6 @@ def waetherTypeCallback(scene, context):
     ]
 
 
-
 #############################################################
 #                                                           #
 #                      SCANNER SETTINGS                     #
@@ -229,6 +257,10 @@ def scannerObjectPoll(self, object):
 
 
 # define all properties needed for all types of scanners
+# the following types:
+# - rotating (lidar)
+# - static (lidar)
+# - side scan (sonar)
 class ScannerProperties(PropertyGroup):
     # GENERAL
     scannerObject: PointerProperty(
@@ -1958,7 +1990,6 @@ class OBJECT_PT_DEBUG_PANEL(MAIN_PANEL, Panel):
         column2.prop(properties, "targetObject")
 
 
-
 #############################################################
 #                                                           #
 #                   WATER PROFILE LIST                      #
@@ -2116,6 +2147,10 @@ class CUSTOM_objectCollection(PropertyGroup):
 
 
 # merge all classes to be displayed
+# PT = Panel (UI) Type
+# OT = Operator Type (Button)
+# UL = UIList (List) Type
+# WM = WindowManager (Window) Type
 classes = (
     WM_OT_INSTALL_DEPENDENCIES,
     WM_OT_LOAD_PRESET,
