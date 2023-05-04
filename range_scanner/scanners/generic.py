@@ -1,20 +1,20 @@
-import bpy
 import sys
-import bmesh
-from mathutils.bvhtree import BVHTree
-import numpy as np
-from . import hit_info
 import time
-
 from enum import Enum
+
+import bmesh
+import bpy
+import numpy as np
+from mathutils.bvhtree import BVHTree
+
+from . import hit_info
 
 ScannerType = Enum("ScannerType", "static rotating sideScan")
 
-from . import lidar
-from . import sonar
-from ..export import exporter
 from .. import material_helper
+from ..export import exporter
 from ..scanners import generic
+from . import lidar, sonar
 
 
 # source: https://blender.stackexchange.com/a/30739/95167

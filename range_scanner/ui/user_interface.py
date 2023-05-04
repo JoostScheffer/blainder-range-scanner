@@ -1,5 +1,30 @@
 # context.area: VIEW_3D
 
+import importlib
+import os
+import pathlib
+import random
+import subprocess
+import sys
+import time
+from math import radians
+
+import bpy
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
+from bpy.types import Operator, Panel, PropertyGroup, UIList
+from bpy.utils import unregister_class
+from mathutils import Euler, Vector
+
+from ..scanners import generic
+
 # add-on skeleton taken from: https://blender.stackexchange.com/a/57332
 
 bl_info = {
@@ -13,35 +38,6 @@ bl_info = {
     "category": "3D View",
     "wiki_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner",
 }
-
-import bpy
-import sys
-
-from bpy.props import (
-    StringProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    EnumProperty,
-    PointerProperty,
-    CollectionProperty,
-)
-
-from bpy.types import Panel, Operator, PropertyGroup, UIList
-
-from bpy.utils import unregister_class
-
-
-from ..scanners import generic
-
-import time
-import os
-import importlib
-import pathlib
-import random
-from mathutils import Vector, Euler
-from math import radians
-
 
 # define location of UI panels
 class MAIN_PANEL:
@@ -74,9 +70,6 @@ class MAIN_PANEL:
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-
-import bpy
-import subprocess
 
 dependencies_installed = False
 

@@ -1,6 +1,7 @@
+import os
+
 import laspy
 import numpy as np
-import os
 
 
 def export(filePath, fileName, data, exportNoiseData, usePartIDs):

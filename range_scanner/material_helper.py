@@ -1,7 +1,7 @@
+import numpy as np
+from bpy.types import Image, Mesh, MeshPolygon
 from mathutils import Vector
 from mathutils.interpolate import poly_3d_calc
-from bpy.types import Mesh, MeshPolygon, Image
-import numpy as np
 
 
 def getSurfaceReflectivity(color):

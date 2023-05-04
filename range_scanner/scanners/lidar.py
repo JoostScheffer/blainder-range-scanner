@@ -1,17 +1,16 @@
-import bpy
-from mathutils import Vector, Quaternion
-from math import radians
-import numpy as np
-import time
+import math
 import os
-import math, mathutils
+import time
+from math import radians
 
-from .. import error_distribution
-from .. import material_helper
+import bpy
+import mathutils
+import numpy as np
+from mathutils import Quaternion, Vector
+
+from .. import error_distribution, fresnel, material_helper
 from ..export import exporter
-from .. import fresnel
 from . import generic
-
 
 # refractive index of air
 # see: https://en.wikipedia.org/wiki/List_of_refractive_indices

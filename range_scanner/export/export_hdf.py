@@ -1,7 +1,8 @@
-import h5py
-import numpy as np
 import os
 from pathlib import Path
+
+import h5py
+import numpy as np
 
 # this datatype allows us to write arrays with arbitrary lengths in each row
 # see: https://stackoverflow.com/a/42659049

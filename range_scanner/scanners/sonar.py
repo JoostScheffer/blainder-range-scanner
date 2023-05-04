@@ -1,16 +1,15 @@
-import bpy
-from mathutils import Vector, Quaternion
-from math import radians
-import numpy as np
-import time
-import os
 import math
+import os
+import time
+from math import radians
 
-from .. import error_distribution
-from .. import material_helper
+import bpy
+import numpy as np
+from mathutils import Quaternion, Vector
+
+from .. import error_distribution, material_helper
 from ..export import exporter
-from . import hit_info
-from . import generic
+from . import generic, hit_info
 
 
 def castRay(

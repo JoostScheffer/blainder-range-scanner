@@ -1,6 +1,7 @@
-import numpy as np
-import bpy
 import os
+
+import bpy
+import numpy as np
 
 
 class Exporter:

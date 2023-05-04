@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import bpy
-from random import seed, randint, random, uniform
-import numpy as np
-from pathlib import Path
 import os
+from pathlib import Path
+from random import randint, random, seed, uniform
+
+import bpy
+import numpy as np
 
 # seed random number generator
 seed()

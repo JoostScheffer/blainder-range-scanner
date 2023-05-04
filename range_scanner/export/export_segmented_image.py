@@ -1,7 +1,8 @@
+import colorsys
+import os
+
 import bpy
 import numpy as np
-import os
-import colorsys
 
 
 def export(filePath, fileName, data, partIDs, exportPascalVoc, width, height):
