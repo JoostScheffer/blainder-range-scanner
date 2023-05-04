@@ -1,7 +1,6 @@
-import random
 import bpy
-import numpy as np
 import os
+
 
 def export(filePath, fileName):
     print("Saving scene as image...")
@@ -9,7 +8,7 @@ def export(filePath, fileName):
     # render image with Blenders internal rendering engine
     scene = bpy.context.scene
 
-    scene.render.image_settings.file_format = 'PNG'
+    scene.render.image_settings.file_format = "PNG"
     scene.render.filepath = os.path.join(filePath, "%s_image_rendered.png" % fileName)
     bpy.ops.render.render(write_still=True)
 

@@ -1,31 +1,37 @@
 import bpy
-from bpy import context
 from mathutils import Vector, Quaternion
-from math import radians, degrees
+from math import radians
 import numpy as np
 import time
-import bmesh
-from mathutils.bvhtree import BVHTree
-import colorsys
 import os
-import sys
 import math, mathutils
 
 from .. import error_distribution
 from .. import material_helper
 from ..export import exporter
-from . import hit_info
 from .. import fresnel
-from ..ui import user_interface
 from . import generic
 
 
 # refractive index of air
 # see: https://en.wikipedia.org/wiki/List_of_refractive_indices
-iorAir = 1.000293 
+iorAir = 1.000293
 
 
-def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsgraph, debugLines, debugOutput, currentIOR, isInsideMaterial, remainingReflectionDepth):
+def castRay(
+    targets,
+    trees,
+    origin,
+    direction,
+    maxRange,
+    materialMappings,
+    depsgraph,
+    debugLines,
+    debugOutput,
+    currentIOR,
+    isInsideMaterial,
+    remainingReflectionDepth,
+):
     if remainingReflectionDepth < 0:
         return None
 
@@ -36,7 +42,9 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
         print("### SUBCAST ###")
         print(origin, direction, maxRange)
 
-    closestHit = generic.getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debugLines)
+    closestHit = generic.getClosestHit(
+        targets, trees, origin, direction, maxRange, debugOutput, debugLines
+    )
 
     if closestHit is not None:
         # the normal is given in local object space, so we need to transform it to global space
@@ -46,22 +54,32 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
         normalAngle = direction.angle(normal)
 
         # get the material's reflectivity properties
-        materialProperty = material_helper.getMaterialColorAndMetallic(closestHit, materialMappings, depsgraph, debugOutput)
-        
+        materialProperty = material_helper.getMaterialColorAndMetallic(
+            closestHit, materialMappings, depsgraph, debugOutput
+        )
+
         closestHit.color = materialProperty.color
 
         # use simple lambert reflectance to approximate light return
         # see: https://en.wikipedia.org/wiki/Lambertian_reflectance
-        closestHit.intensity = abs(math.cos(normalAngle)) *  material_helper.getSurfaceReflectivity(materialProperty.color)
+        closestHit.intensity = abs(math.cos(normalAngle)) * material_helper.getSurfaceReflectivity(
+            materialProperty.color
+        )
 
         if debugOutput:
-            print("RGBA", materialProperty.color[0], materialProperty.color[1], materialProperty.color[2], materialProperty.color[3])
+            print(
+                "RGBA",
+                materialProperty.color[0],
+                materialProperty.color[1],
+                materialProperty.color[2],
+                materialProperty.color[3],
+            )
             print("Metallic ", materialProperty.metallic)
-                        
+
         # if the surface is 100% reflecting reflect the ray
         # aka: recursive raytracing
         # see: https://en.wikipedia.org/wiki/Ray_tracing_(graphics)#Recursive_ray_tracing_algorithm:~:text=rendered.-,Recursive%20ray%20tracing%20algorithm
-        if (materialProperty is not None and materialProperty.metallic == 1.0):
+        if materialProperty is not None and materialProperty.metallic == 1.0:
             if debugOutput:
                 print("### RESULT ###")
                 print("Hit point location: ", closestHit.location)
@@ -77,7 +95,7 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
                 generic.addLine(closestHit.location, closestHit.location + normal)
                 generic.addLine(origin, closestHit.location)
                 generic.addLine(closestHit.location, closestHit.location + reflectedVec)
-            
+
             if debugOutput:
                 print("### REFLECTION ###")
                 print("direction: ", direction)
@@ -90,10 +108,23 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
             if newRange > 0.0:
                 # the offset is needed to push the origin 1mm in the direction of the ray as otherwise we might
                 # hit the same location again because of rounding errors
-                directionOffset = (reflectedVec.normalized() * 0.001)    
+                directionOffset = reflectedVec.normalized() * 0.001
 
-                # cast new ray from current hit point            
-                reflectedHit = castRay(targets, trees, closestHit.location + directionOffset, reflectedVec, newRange, materialMappings, depsgraph, debugLines, debugOutput, currentIOR, isInsideMaterial, remainingReflectionDepth - 1)
+                # cast new ray from current hit point
+                reflectedHit = castRay(
+                    targets,
+                    trees,
+                    closestHit.location + directionOffset,
+                    reflectedVec,
+                    newRange,
+                    materialMappings,
+                    depsgraph,
+                    debugLines,
+                    debugOutput,
+                    currentIOR,
+                    isInsideMaterial,
+                    remainingReflectionDepth - 1,
+                )
 
                 if reflectedHit is not None:
                     # the scanner does not know if a ray is returned from an object's surface or a mirror
@@ -102,13 +133,15 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
 
                     # the hit location seems to have the color of the reflected surface
                     closestHit.color = reflectedHit.color
-                    closestHit.intensity = material_helper.getSurfaceReflectivity(reflectedHit.color)
+                    closestHit.intensity = material_helper.getSurfaceReflectivity(
+                        reflectedHit.color
+                    )
 
                     closestHit.wasReflected = True
                 else:
                     return None
-        
-        if (materialProperty is not None and materialProperty.ior > 0.0):
+
+        if materialProperty is not None and materialProperty.ior > 0.0:
             # when hitting glass, there are 4 cases:
             #   - the ray goes through the glas and hits the object behind
             #   - the ray is reflected and hits an object in the reflected direction
@@ -145,7 +178,7 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
                     generic.addLine(closestHit.location, closestHit.location + normal)
                     generic.addLine(origin, closestHit.location)
                     generic.addLine(closestHit.location, closestHit.location + reflectedVec)
-                
+
                 if debugOutput:
                     print("### REFLECTION ###")
                     print("direction: ", direction)
@@ -153,27 +186,39 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
                     print("reflected: ", reflectedVec, closestHit.location + reflectedVec)
 
                 # now we need to know how much light is reflected and how much is refracted
-                # static approach: 
+                # static approach:
                 # https://link.springer.com/content/pdf/10.1007%2F978-3-8348-2101-0.pdf, S. 604
                 # Velodyne Scanner 63-HDL64ES2g HDL-64E S2 CD HDL-64E S2 Users Manual low res, S. 39, 905nm -> IR-A (nahes Infrarot)
                 # -> 85 % transmission
 
-
-                # dynamic approach: 
+                # dynamic approach:
                 # https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
                 # https://refractiveindex.info/?shelf=3d&book=glass&page=BK7
                 # https://de.wikipedia.org/wiki/Brechungsindex#Brechungsindex_der_Luft_und_anderer_Stoffe
                 transmission = fresnel.T_unpolarized(materialProperty.ior, angle, 1.000292)
-                reflectivity = 1 - transmission 
+                reflectivity = 1 - transmission
 
-                # mirror the ray at the glass surface   
+                # mirror the ray at the glass surface
                 if isInsideMaterial:
                     reflectedHit = None
                 else:
                     # the offset is needed to push the origin 1mm in the direction of the ray as otherwise we might
                     # hit the same location again because of rounding errors
-                    directionOffset = (reflectedVec.normalized() * 0.001) 
-                    reflectedHit = castRay(targets, trees, closestHit.location + directionOffset, reflectedVec, newRange, materialMappings, depsgraph, debugLines, debugOutput, currentIOR, isInsideMaterial, remainingReflectionDepth - 1)
+                    directionOffset = reflectedVec.normalized() * 0.001
+                    reflectedHit = castRay(
+                        targets,
+                        trees,
+                        closestHit.location + directionOffset,
+                        reflectedVec,
+                        newRange,
+                        materialMappings,
+                        depsgraph,
+                        debugLines,
+                        debugOutput,
+                        currentIOR,
+                        isInsideMaterial,
+                        remainingReflectionDepth - 1,
+                    )
 
                 intensityReflected = 0.0
                 if reflectedHit is not None:
@@ -184,9 +229,6 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
                     # the rest is split up between absorption and reflection (~ 50/50 -> # https://link.springer.com/content/pdf/10.1007%2F978-3-8348-2101-0.pdf, S. 605, 3-18)
                     # as the ray is reflected at the glass twice, the value is reduced twice
                     intensityReflected *= reflectivity * reflectivity
-
-
-
 
                 # send the ray through the glass
                 # see: https://en.wikipedia.org/wiki/Snell%27s_law
@@ -206,7 +248,9 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
 
                 # calculate new direction vector
                 # see: http://www.starkeffects.com/snells-law-vector.shtml
-                newDirection = n * (normal.cross(-normal.cross(direction))) - normal * np.sqrt(1 - (n**2) * (normal.cross(direction) @ normal.cross(direction)))
+                newDirection = n * (normal.cross(-normal.cross(direction))) - normal * np.sqrt(
+                    1 - (n**2) * (normal.cross(direction) @ normal.cross(direction))
+                )
 
                 if debugOutput:
                     print("### REFRACTION ###")
@@ -215,17 +259,31 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
                     print("normal: ", normal, normal + closestHit.location)
                     print("refracted: ", newDirection, closestHit.location + newDirection)
 
-                directionOffset = (newDirection.normalized() * 0.001)
-                passthroughHit = castRay(targets, trees, closestHit.location + directionOffset, newDirection, newRange, materialMappings, depsgraph, debugLines, debugOutput, materialProperty.ior, not isInsideMaterial, remainingReflectionDepth - 1)
-                
+                directionOffset = newDirection.normalized() * 0.001
+                passthroughHit = castRay(
+                    targets,
+                    trees,
+                    closestHit.location + directionOffset,
+                    newDirection,
+                    newRange,
+                    materialMappings,
+                    depsgraph,
+                    debugLines,
+                    debugOutput,
+                    materialProperty.ior,
+                    not isInsideMaterial,
+                    remainingReflectionDepth - 1,
+                )
+
                 intensityPassthrough = 0.0
                 if passthroughHit is not None:
-                    intensityPassthrough = material_helper.getSurfaceReflectivity(passthroughHit.color)
+                    intensityPassthrough = material_helper.getSurfaceReflectivity(
+                        passthroughHit.color
+                    )
 
                     # the transmission tells us, which amount of  light goes through the glass
                     # as the ray passes the glass twice, the value is reduced twice
                     intensityPassthrough *= transmission * transmission
-
 
                 # decide which return is the brightest
                 if intensityPassthrough >= intensityReflected and intensityPassthrough > 0.0:
@@ -251,30 +309,75 @@ def castRay(targets, trees, origin, direction, maxRange, materialMappings, depsg
                 else:
                     # we return None, as the sensor can't register a hit on the glass' surface
                     return None
-        
+
         return closestHit
-    
+
     return None
 
 
-
-def performScan(context, 
-                scannerType, scannerObject,
-                reflectivityLower, distanceLower, reflectivityUpper, distanceUpper, maxReflectionDepth,
-                intervalStart, intervalEnd, fovX, stepsX, fovY, stepsY, percentage,
-                scannedValues, startIndex,
-                firstFrame, lastFrame, frameNumber, rotationsPerSecond,
-                addNoise, noiseType, mu, sigma, addConstantNoise, noiseAbsoluteOffset, noiseRelativeOffset,
-                simulateRain, rainfallRate, 
-                simulateDust, particleRadius, particlesPcm, dustCloudLength, dustCloudStart,
-                addMesh,
-                exportLAS, exportHDF, exportCSV, exportPLY, 
-                exportRenderedImage, exportSegmentedImage, exportPascalVoc, exportDepthmap, depthMinDistance, depthMaxDistance, 
-                dataFilePath, dataFileName,
-                debugLines, debugOutput, outputProgress, measureTime, singleRay, destinationObject, targetObject,
-                targets, materialMappings,
-                categoryIDs, partIDs, trees, depsgraph):
-
+def performScan(
+    context,
+    scannerType,
+    scannerObject,
+    reflectivityLower,
+    distanceLower,
+    reflectivityUpper,
+    distanceUpper,
+    maxReflectionDepth,
+    intervalStart,
+    intervalEnd,
+    fovX,
+    stepsX,
+    fovY,
+    stepsY,
+    percentage,
+    scannedValues,
+    startIndex,
+    firstFrame,
+    lastFrame,
+    frameNumber,
+    rotationsPerSecond,
+    addNoise,
+    noiseType,
+    mu,
+    sigma,
+    addConstantNoise,
+    noiseAbsoluteOffset,
+    noiseRelativeOffset,
+    simulateRain,
+    rainfallRate,
+    simulateDust,
+    particleRadius,
+    particlesPcm,
+    dustCloudLength,
+    dustCloudStart,
+    addMesh,
+    exportLAS,
+    exportHDF,
+    exportCSV,
+    exportPLY,
+    exportRenderedImage,
+    exportSegmentedImage,
+    exportPascalVoc,
+    exportDepthmap,
+    depthMinDistance,
+    depthMaxDistance,
+    dataFilePath,
+    dataFileName,
+    debugLines,
+    debugOutput,
+    outputProgress,
+    measureTime,
+    singleRay,
+    destinationObject,
+    targetObject,
+    targets,
+    materialMappings,
+    categoryIDs,
+    partIDs,
+    trees,
+    depsgraph,
+):
     if measureTime:
         startTime = time.time()
 
@@ -295,14 +398,14 @@ def performScan(context,
         totalNumberOfRays = xRange.size * yRange.size
     elif scannerType == generic.ScannerType.static.name:
         # setup camera properties
-        sensor.data.lens_unit = 'FOV'
+        sensor.data.lens_unit = "FOV"
         scene.render.resolution_x = stepsX
         scene.render.resolution_y = stepsY
 
         scale = (fovY / fovX) / (stepsY / stepsX)
 
         # the camera's FOV is dependent on the angles
-        # and the aspect ratio of the resolution 
+        # and the aspect ratio of the resolution
         # see: https://blender.stackexchange.com/a/38571
         if fovX < fovY:
             sensor.data.angle = math.radians(fovY)
@@ -315,13 +418,13 @@ def performScan(context,
         else:
             scene.render.pixel_aspect_x = 1.0 / scale
             scene.render.pixel_aspect_y = 1.0
-            
+
         scene.render.resolution_percentage = int(percentage)
 
         # defining sensor properties
         frame = sensor.data.view_frame(scene=scene)
         topRight = frame[0]
-        bottomRight = frame[1]
+        frame[1]
         bottomLeft = frame[2]
         topLeft = frame[3]
 
@@ -331,7 +434,7 @@ def performScan(context,
         totalNumberOfRays = xRange.size * yRange.size
     else:
         print("ERROR: Unknown scanner type %s!" % scannerType)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
     origin = sensor.matrix_world.translation
 
@@ -356,50 +459,63 @@ def performScan(context,
     for x in xRange:
         # setup vector in the according direction
         quatX = Quaternion((0.0, 1.0, 0.0), radians(x))
-        
+
         for y in yRange:
             if scannerType == generic.ScannerType.rotating.name:
                 quatY = Quaternion((1.0, 0.0, 0.0), radians(y))
 
                 # define "zero" direction of sensor
                 vec = Vector((0.0, 0.0, -1.0))
-                
+
                 # calculate destination translation from X/Y directions
                 quatAll = quatX @ quatY
                 vec.rotate(quatAll)
 
-                # caution: we can't use sensor.rotation_euler as it only gives us the 
+                # caution: we can't use sensor.rotation_euler as it only gives us the
                 # object's local rotation
                 # instead, we need to use the global rotation after "Follow Path" constraint is applied
-                # see comments of: https://blender.stackexchange.com/a/38179/95167 
+                # see comments of: https://blender.stackexchange.com/a/38179/95167
                 vec.rotate(sensor.matrix_world.decompose()[1])
-                            
+
             elif scannerType == generic.ScannerType.static.name:
                 # get current pixel vector from camera center
                 vec = Vector((x, y, topLeft[2]))
-                
+
                 # rotate that vector according to camera rotation
                 vec.rotate(sensor.matrix_world.decompose()[1])
-                           
+
             # calculate destination location
             destination = vec + sensor.matrix_world.translation
 
             if singleRay:
                 destination = destinationObject.matrix_world.translation
 
-            # calculate ray direction 
+            # calculate ray direction
             direction = destination - origin
 
-            closestHit = castRay(targets, trees, origin, direction, distanceUpper, materialMappings, depsgraph, debugLines, debugOutput, iorAir, False, maxReflectionDepth - 1)
+            closestHit = castRay(
+                targets,
+                trees,
+                origin,
+                direction,
+                distanceUpper,
+                materialMappings,
+                depsgraph,
+                debugLines,
+                debugOutput,
+                iorAir,
+                False,
+                maxReflectionDepth - 1,
+            )
 
             # if location is None, no hit was found within the given range
-            if closestHit is not None: 
+            if closestHit is not None:
                 # set the image x/y coordinates for tof sensor
                 closestHit.x = indexX
                 closestHit.y = indexY
 
                 # the Kinect raw depth data does not measure the distance between camera lens (L)
-                # and hit point (H) -> d_1, but between the (virtual) camera plane and hit point, 
+                # and hit point (H) -> d_1, but between the (virtual) camera plane and hit point,
                 # so we need to correct the distance
                 #
                 #   -----------------------H----
@@ -413,51 +529,58 @@ def performScan(context,
                 actualDistance = closestHit.distance
                 if scannerType == generic.ScannerType.static.name:
                     # only modify the distance, not the XYZ values!
-                    closestHit.distance = mathutils.geometry.distance_point_to_plane(closestHit.location, origin, sensorZero)
-                
+                    closestHit.distance = mathutils.geometry.distance_point_to_plane(
+                        closestHit.location, origin, sensorZero
+                    )
+
                 # set category/part id for that hit to enable segmentation
                 if "partID" in closestHit.target:
                     partIDIndex = closestHit.target["partID"]
                 else:
-                    partIDIndex = closestHit.target.material_slots[materialMappings[closestHit.target][1][closestHit.faceIndex]].name
+                    partIDIndex = closestHit.target.material_slots[
+                        materialMappings[closestHit.target][1][closestHit.faceIndex]
+                    ].name
 
                 closestHit.categoryID = categoryIDs[closestHit.target["categoryID"]]
                 closestHit.partID = partIDs[partIDIndex]
-                    
+
                 if closestHit.wasReflected:
                     if debugLines:
                         generic.addLine(origin, closestHit.location)
-                    
+
                     fakePoint = direction.normalized() * closestHit.distance + origin
-                    
+
                     if debugOutput:
                         print(fakePoint)
                         print("Total reflected distance ", closestHit.distance)
-                        
+
                     # update the original hit location (on the mirror) with the fake position from the total distance
                     closestHit.location = fakePoint
-                    
+
                     if debugLines:
                         generic.addLine(origin, closestHit.location)
 
-                
                 noise = noiseAbsoluteOffset + (closestHit.distance * noiseRelativeOffset / 100.0)
-                
+
                 surfaceReflectivity = closestHit.intensity
 
                 # source: https://github.com/mgschwan/blensor/blob/0b6cca9f189b1e072cfd8aaa6360deeab0b96c61/release/scripts/addons/blensor/scan_interface_pure.py#L9
                 rMin = 0.0
                 if closestHit.distance >= distanceLower:
-                    rMin = reflectivityLower + ((reflectivityUpper - reflectivityLower) * closestHit.distance) / (distanceUpper - distanceLower)
+                    rMin = reflectivityLower + (
+                        (reflectivityUpper - reflectivityLower) * closestHit.distance
+                    ) / (distanceUpper - distanceLower)
 
                 delta = 0
 
                 if simulateRain:
                     # see https://www.researchgate.net/publication/330415308_Predicting_the_influence_of_rain_on_LIDAR_in_ADAS for details
-                    noise += error_distribution.applyNoise(0.0, 0.02 * closestHit.distance * (1 - np.e ** -rainfallRate) ** 2) # equation (9)
-                
+                    noise += error_distribution.applyNoise(
+                        0.0, 0.02 * closestHit.distance * (1 - np.e**-rainfallRate) ** 2
+                    )  # equation (9)
+
                     # coefficient following observation
-                    backScatteringCoefficientRain = 0.01 * rainfallRate ** 0.6 # equation (5)
+                    backScatteringCoefficientRain = 0.01 * rainfallRate**0.6  # equation (5)
 
                     delta = np.e ** (-2 * backScatteringCoefficientRain * closestHit.distance) - 1
 
@@ -469,7 +592,7 @@ def performScan(context,
                     # see: https://www.researchgate.net/publication/313582355_When_the_Dust_Settles_The_Four_Behaviors_of_LiDAR_in_the_Presence_of_Fine_Airborne_Particulates
                     Rt = closestHit.distance
 
-                    r = particleRadius * 10**(-6)
+                    r = particleRadius * 10 ** (-6)
                     n = particlesPcm
                     Ld = dustCloudLength
                     Rd = dustCloudStart
@@ -479,13 +602,13 @@ def performScan(context,
                         pass
                     else:
                         # target in or behind dust cloud
-                        beta = (r**2 * n) / 4 # eq. (31)
+                        beta = (r**2 * n) / 4  # eq. (31)
 
                         if beta > rMin:
                             # light is reflected by the cloud -> appears as solid object
 
-                            # calculate the direction vector 
-                            dustDirection =  direction.normalized() * Rd
+                            # calculate the direction vector
+                            dustDirection = direction.normalized() * Rd
 
                             # calculate the dust cloud location of the hit point
                             dustLocation = dustDirection + origin
@@ -493,7 +616,7 @@ def performScan(context,
                             if debugOutput:
                                 print("Dust Distance ", dustDirection)
                                 print("Dust Location ", dustLocation)
-                            
+
                             # update the closest hit to the dust cloud
                             closestHit.location = dustLocation
                             closestHit.distance = Rd
@@ -504,29 +627,33 @@ def performScan(context,
                             # the end is the length + the start distance
                             dustCloudEnd = Rd + Ld
 
-                            if Rt < dustCloudEnd: 
+                            if Rt < dustCloudEnd:
                                 # target inside dust cloud, so we need to calculate the part of the dust cloud
                                 # which is IN FRONT of our target
                                 relevantDustCloudLength = Rt - Rd
-                                
+
                             else:
                                 # target behind dust cloud, so the full length of the dust cloud reduces the power
                                 relevantDustCloudLength = Ld
-                            
+
                             # calculate the transmission loss
-                            alpha = np.exp(-2 * np.pi * r**2 * n * (relevantDustCloudLength)) # eq. (32)
+                            alpha = np.exp(
+                                -2 * np.pi * r**2 * n * (relevantDustCloudLength)
+                            )  # eq. (32)
 
                 surfaceReflectivity *= alpha
 
-                isVisible = surfaceReflectivity > rMin #relativeSensorPower > minimumRelativePower:
-                
+                isVisible = (
+                    surfaceReflectivity > rMin
+                )  # relativeSensorPower > minimumRelativePower:
+
                 # if the return is not powerful enough, the detector can't see it at all
                 if not isVisible:
                     closestHit.intensity = 0.0
 
-                #if not isVisible:
+                # if not isVisible:
                 #    continue
-                
+
                 if debugOutput:
                     print("Visible ", isVisible, surfaceReflectivity, rMin)
 
@@ -542,7 +669,7 @@ def performScan(context,
                     print("Length ", closestHit.location.length)
                     print("Noise ", noise)
                     print("Distance ", closestHit.distance)
-                
+
                 if exportNoiseData:
                     # we can't simply move the hit location around by some random translation
                     # instead, we have to move it along the ray direction
@@ -552,9 +679,9 @@ def performScan(context,
                         noiseDistance = actualDistance + noise
                     else:
                         noiseDistance = closestHit.distance + noise
-                    
+
                     # calculate the direction vector with noise applied
-                    noiseDirection =  direction.normalized() * noiseDistance
+                    noiseDirection = direction.normalized() * noiseDistance
 
                     # calculate the noise location of the hit point
                     noiseLocation = noiseDirection + origin
@@ -562,7 +689,7 @@ def performScan(context,
                     if debugOutput:
                         print("Noise Distance ", noiseDistance)
                         print("Noise Location ", noiseLocation)
-                    
+
                     closestHit.noiseLocation = noiseLocation
                     closestHit.noiseDistance = noiseDistance
 
@@ -572,17 +699,17 @@ def performScan(context,
             else:
                 if debugOutput:
                     print("NO HIT within range of %f" % distanceUpper)
-            
+
             indexY += 1
 
             if singleRay:
                 break
-        
+
         indexX += 1
         indexY = 0
 
         if outputProgress:
-            percentage = (indexX * yRange.size) / totalNumberOfRays 
+            percentage = (indexX * yRange.size) / totalNumberOfRays
             generic.updateProgress("Scanning scene", percentage)
 
         if singleRay:
@@ -613,15 +740,37 @@ def performScan(context,
 
     if len(slicedScannedValues) > 0:
         # setup exporter with our data
-        if exportLAS or exportHDF or exportCSV or exportPLY or exportSegmentedImage or exportRenderedImage or exportDepthmap:
-            fileExporter = exporter.Exporter(dataFilePath, "%s_frame_%d" % (dataFileName, frameNumber), dataFileName, slicedScannedValues, targets, categoryIDs, partIDs, materialMappings, exportNoiseData, stepsX, stepsY)
+        if (
+            exportLAS
+            or exportHDF
+            or exportCSV
+            or exportPLY
+            or exportSegmentedImage
+            or exportRenderedImage
+            or exportDepthmap
+        ):
+            fileExporter = exporter.Exporter(
+                dataFilePath,
+                "%s_frame_%d" % (dataFileName, frameNumber),
+                dataFileName,
+                slicedScannedValues,
+                targets,
+                categoryIDs,
+                partIDs,
+                materialMappings,
+                exportNoiseData,
+                stepsX,
+                stepsY,
+            )
 
             # export to each format
             if exportLAS:
                 fileExporter.exportLAS()
 
             if exportHDF:
-                fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_single" % (firstFrame, lastFrame))
+                fileExporter.exportHDF(
+                    fileNameExtra="_frames_%d_to_%d_single" % (firstFrame, lastFrame)
+                )
 
             if exportCSV:
                 fileExporter.exportCSV()
@@ -644,8 +793,6 @@ def performScan(context,
     if measureTime:
         print("Output: %s s" % (time.time() - startTime))
 
-    
-
     print("Done.")
 
-    return (valueIndex - startIndex)
+    return valueIndex - startIndex

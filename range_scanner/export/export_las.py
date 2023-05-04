@@ -2,22 +2,23 @@ import laspy
 import numpy as np
 import os
 
+
 def export(filePath, fileName, data, exportNoiseData, usePartIDs):
     print("Exporting data into .las format...")
 
-    # create header 
+    # create header
     # see https://laspy.readthedocs.io/en/latest/tut_background.html for info on point formats
     header = laspy.LasHeader(point_format=2)
 
     # create output file path
     if usePartIDs:
         outfile = laspy.LasData(header=header)
-        
+
         # assign data
         outfile.pt_src_id = data[1]
     else:
         outfile = laspy.LasData(header=header)
-    
+
         # assign data
         outfile.pt_src_id = data[0]
 
@@ -30,7 +31,7 @@ def export(filePath, fileName, data, exportNoiseData, usePartIDs):
     ymin = np.floor(np.min(allY))
     zmin = np.floor(np.min(allZ))
 
-    outfile.header.offset = [xmin,ymin,zmin]
+    outfile.header.offset = [xmin, ymin, zmin]
     scaleFactor = 0.0001
     outfile.header.scale = [scaleFactor, scaleFactor, scaleFactor]
 
@@ -49,17 +50,17 @@ def export(filePath, fileName, data, exportNoiseData, usePartIDs):
         outfile.write(os.path.join(filePath, "%s_parts.las" % fileName))
     else:
         outfile.write(os.path.join(filePath, "%s.las" % fileName))
-    
+
     if exportNoiseData:
         # create output file path
         if usePartIDs:
             outfile = laspy.LasData(header=header)
-            
+
             # assign data
             outfile.pt_src_id = data[1]
         else:
             outfile = laspy.LasData(header=header)
-        
+
             # assign data
             outfile.pt_src_id = data[0]
 
@@ -72,8 +73,8 @@ def export(filePath, fileName, data, exportNoiseData, usePartIDs):
         ymin = np.floor(np.min(allY))
         zmin = np.floor(np.min(allZ))
 
-        outfile.header.offset = [xmin,ymin,zmin]
-        outfile.header.scale = [0.001,0.001,0.001]
+        outfile.header.offset = [xmin, ymin, zmin]
+        outfile.header.scale = [0.001, 0.001, 0.001]
 
         outfile.x = allX
         outfile.y = allY
@@ -89,5 +90,5 @@ def export(filePath, fileName, data, exportNoiseData, usePartIDs):
             outfile.write(os.path.join(filePath, "%s_noise_parts.las" % fileName))
         else:
             outfile.write(os.path.join(filePath, "%s_noise.las" % fileName))
-        
+
     print("Done.")

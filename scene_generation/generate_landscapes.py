@@ -10,12 +10,13 @@ directory = dirname(abspath(__file__))
 blueprintPath = join(directory, "blueprint.blend")
 scriptPath = join(directory, "landscape.py")
 
+
 # we want to constantly print the output from our script
 # source: https://stackoverflow.com/a/4417735/13440564
 def execute(cmd):
     popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(popen.stdout.readline, ""):
-        yield stdout_line 
+        yield stdout_line
     popen.stdout.close()
     return_code = popen.wait()
     if return_code:
@@ -23,9 +24,9 @@ def execute(cmd):
 
 
 for i in range(3):
-    print("Generating scene %d..." % (i+1))
-    
-    #print(subprocess.check_output(['blender', blueprintPath, '--background', '--python', scriptPath]).decode())
+    print("Generating scene %d..." % (i + 1))
 
-    for path in execute(['blender', blueprintPath, '--background', '--python', scriptPath]):
+    # print(subprocess.check_output(['blender', blueprintPath, '--background', '--python', scriptPath]).decode())
+
+    for path in execute(["blender", blueprintPath, "--background", "--python", scriptPath]):
         print(path, end="")
