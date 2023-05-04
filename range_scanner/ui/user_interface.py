@@ -27,22 +27,26 @@ from ..scanners import generic
 
 # add-on skeleton taken from: https://blender.stackexchange.com/a/57332
 
+# metainfo https://wiki.blender.org/wiki/Process/Addons/Guidelines/metainfo
 bl_info = {
     "name": "range_scanner",
-    "author": "Lorenzo Neumann",
     "description": "Range scanner simulation for Blender",
+    "author": "Lorenzo Neumann",
     "blender": (2, 81, 0),
-    "version": (0, 0, 1),
-    "location": "3D View > Scanner",
+    "version": (0, 0, 2),
+    "location": "View3D > Scanner",
+    "doc_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner",
     "warning": "",
     "category": "3D View",
-    "wiki_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner",
+    "support": "COMMUNITY",
 }
-
-# define location of UI panels
 
 
 class MAIN_PANEL:
+    """Main panel for the range scanner add-on
+    defines the location of the panel in the UI
+    """
+
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Scanner"
@@ -142,8 +146,7 @@ def install_and_import_module(module, importName):
         print(f"Installing {module}")
 
         # Try to install the package. This may fail with subprocess.CalledProcessError
-        subprocess.run([sys.executable, "-m", "pip",
-                       "install", module], check=True)
+        subprocess.run([sys.executable, "-m", "pip", "install", module], check=True)
     finally:
         # Always restore the original environment variables
         os.environ.clear()
@@ -166,10 +169,7 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
         try:
             install_pip()
 
-            requirementsPath = os.path.join(
-                pathlib.Path(
-                    __file__).parent.parent.absolute(), "requirements.txt"
-            )
+            requirementsPath = os.path.join(pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt")
             print("Reading dependencies from {0}".format(requirementsPath))
             requirementsFile = open(requirementsPath, "r")
             requirements = requirementsFile.readlines()
@@ -192,11 +192,9 @@ class WM_OT_INSTALL_DEPENDENCIES(Operator):
                 if importName is None:
                     importName = name
 
-                print(
-                    f"Checking {name}: version {version}, import {importName}")
+                print(f"Checking {name}: version {version}, import {importName}")
 
-                install_and_import_module(
-                    module=stripped, importName=importName)
+                install_and_import_module(module=stripped, importName=importName)
 
                 importName = None
         except (subprocess.CalledProcessError, ImportError) as err:
@@ -361,8 +359,7 @@ class WM_OT_LOAD_PRESET(Operator):
                             speed = item["speed"]
                             density = item["density"]
 
-                            addItemToList(scene, depth, speed,
-                                          density, scene.custom)
+                            addItemToList(scene, depth, speed, density, scene.custom)
 
                         # cleanup list
                         removeDuplicatesFromList(scene, scene.custom)
@@ -387,9 +384,7 @@ def scannerTypeCallback(scene, context):
     # filter all scanners which belong to the category that is currently selected by scannerCategory
     return (
         mapConfig(item)
-        for item in filter(
-            lambda x: x["category"] == context.scene.scannerProperties.scannerCategory, config
-        )
+        for item in filter(lambda x: x["category"] == context.scene.scannerProperties.scannerCategory, config)
     )
 
 
@@ -510,8 +505,7 @@ class ScannerProperties(PropertyGroup):
         default=1,
     )
 
-    frameEnd: IntProperty(
-        name="Frame end", description="The last frame to be rendered", default=10)
+    frameEnd: IntProperty(name="Frame end", description="The last frame to be rendered", default=10)
 
     frameStep: IntProperty(
         name="Frame step",
@@ -727,8 +721,7 @@ class ScannerProperties(PropertyGroup):
     )
 
     # NOISE
-    addNoise: BoolProperty(
-        name="Add noise", description="Enable or disable noise", default=True)
+    addNoise: BoolProperty(name="Add noise", description="Enable or disable noise", default=True)
 
     noiseType: EnumProperty(
         name="Noise type",
@@ -774,18 +767,12 @@ class ScannerProperties(PropertyGroup):
     )
 
     # RAIN
-    simulateRain: BoolProperty(
-        name="Simulate Rain", description="Enable or disable rain simulation", default=False
-    )
+    simulateRain: BoolProperty(name="Simulate Rain", description="Enable or disable rain simulation", default=False)
 
-    rainfallRate: FloatProperty(
-        name="Rainfall rate (mm/h)", description="Rainfall rate in mm/h", default=10.0, min=0.0
-    )
+    rainfallRate: FloatProperty(name="Rainfall rate (mm/h)", description="Rainfall rate in mm/h", default=10.0, min=0.0)
 
     # DUST
-    simulateDust: BoolProperty(
-        name="Simulate dust", description="Enable or disable dust simulation", default=False
-    )
+    simulateDust: BoolProperty(name="Simulate dust", description="Enable or disable dust simulation", default=False)
 
     particleRadius: FloatProperty(
         name="Particle radius (µm)",
@@ -938,9 +925,7 @@ class ScannerProperties(PropertyGroup):
         default=False,
     )
 
-    measureTime: BoolProperty(
-        name="Measure time", description="Enable or disable time measurement", default=False
-    )
+    measureTime: BoolProperty(name="Measure time", description="Enable or disable time measurement", default=False)
 
     singleRay: BoolProperty(
         name="Single ray",
@@ -965,10 +950,8 @@ class ScannerProperties(PropertyGroup):
         description="Select scanner type",
         items=[
             (generic.ScannerType.static.name, generic.ScannerType.static.name, ""),
-            (generic.ScannerType.rotating.name,
-             generic.ScannerType.rotating.name, ""),
-            (generic.ScannerType.sideScan.name,
-             generic.ScannerType.sideScan.name, ""),
+            (generic.ScannerType.rotating.name, generic.ScannerType.rotating.name, ""),
+            (generic.ScannerType.sideScan.name, generic.ScannerType.sideScan.name, ""),
         ],
     )
 
@@ -1052,9 +1035,7 @@ class ScannerProperties(PropertyGroup):
         max=180.0,
     )
 
-    sonarMode3D: BoolProperty(
-        name="3D Mode", description="Enable or disable 3D data points", default=False
-    )
+    sonarMode3D: BoolProperty(name="3D Mode", description="Enable or disable 3D data points", default=False)
 
     sonarKeepRotation: BoolProperty(
         name="Use sensor rotation",
@@ -1099,9 +1080,7 @@ class ScannerProperties(PropertyGroup):
         max=10000.0,
     )
 
-    maxDistance: FloatProperty(
-        name="Maximum distance", description="", default=100.0, min=0.01, max=10000.0
-    )
+    maxDistance: FloatProperty(name="Maximum distance", description="", default=100.0, min=0.01, max=10000.0)
 
     simulateWaterProfile: BoolProperty(
         name="Simulate water profile",
@@ -1142,9 +1121,7 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
     # random modifications enabled
     if properties.enableModification:
         # store the objects pose as default
-        matrixWorld = (
-            properties.swapObject.matrix_world.copy()
-        )  # use copy or the variable itself is also changed
+        matrixWorld = properties.swapObject.matrix_world.copy()  # use copy or the variable itself is also changed
         matrixWorldDecomposed = matrixWorld.decompose()
         oldLocation = matrixWorldDecomposed[0]
         oldRotation = matrixWorldDecomposed[1].to_euler()
@@ -1158,8 +1135,7 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
             transZ = random.uniform(properties.minTransZ, properties.maxTransZ)
 
             # add the values
-            properties.swapObject.location = oldLocation + \
-                Vector((transX, transY, transZ))
+            properties.swapObject.location = oldLocation + Vector((transX, transY, transZ))
 
             rotX = random.uniform(properties.minRotX, properties.maxRotX)
             rotY = random.uniform(properties.minRotY, properties.maxRotY)
@@ -1177,32 +1153,24 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
 
             # if uniform sclaing is enabled, all values should be scaled the same
             if properties.uniformScaling:
-                scaleAll = random.uniform(
-                    properties.minScaleAll, properties.maxScaleAll)
+                scaleAll = random.uniform(properties.minScaleAll, properties.maxScaleAll)
                 properties.swapObject.scale[0] = oldScale[0] * scaleAll
                 properties.swapObject.scale[1] = oldScale[1] * scaleAll
                 properties.swapObject.scale[2] = oldScale[2] * scaleAll
             else:
-                scaleX = random.uniform(
-                    properties.minScaleX, properties.maxScaleX)
-                scaleY = random.uniform(
-                    properties.minScaleY, properties.maxScaleY)
-                scaleZ = random.uniform(
-                    properties.minScaleZ, properties.maxScaleZ)
+                scaleX = random.uniform(properties.minScaleX, properties.maxScaleX)
+                scaleY = random.uniform(properties.minScaleY, properties.maxScaleY)
+                scaleZ = random.uniform(properties.minScaleZ, properties.maxScaleZ)
                 properties.swapObject.scale[0] = oldScale[0] * scaleX
                 properties.swapObject.scale[1] = oldScale[1] * scaleY
                 properties.swapObject.scale[2] = oldScale[2] * scaleZ
 
-            generic.startScan(
-                context, dependencies_installed, properties, "%s_mod_%d" % (
-                    objectName, i)
-            )
+            generic.startScan(context, dependencies_installed, properties, "%s_mod_%d" % (objectName, i))
 
         # reset the matrix so that the next run can start from zero
         properties.swapObject.matrix_world = matrixWorld
     else:
-        generic.startScan(context, dependencies_installed,
-                          properties, objectName)
+        generic.startScan(context, dependencies_installed, properties, objectName)
 
 
 def performScan(context, dependencies_installed, properties):
@@ -1217,9 +1185,7 @@ def performScan(context, dependencies_installed, properties):
             filter(
                 lambda x: x.type == "MESH"
                 and x != properties.swapObject  # object has some kind of geometry
-                and (  # exclude swap object
-                    x.animation_data is None or x.animation_data.action is None
-                )
+                and (x.animation_data is None or x.animation_data.action is None)  # exclude swap object
                 and x.hide_get() is False  # exclude animated objects
                 and x.active_material is not None  # exclude hidden objects
                 and "categoryID" not in x  # only consider targets with a material set
@@ -1255,10 +1221,7 @@ def performScan(context, dependencies_installed, properties):
         for path, _, files in os.walk(absolutePath):
             for name in files:
                 if (
-                    name.endswith(".fbx")
-                    or name.endswith(".gltf")
-                    or name.endswith(".glb")
-                    or name.endswith(".obj")
+                    name.endswith(".fbx") or name.endswith(".gltf") or name.endswith(".glb") or name.endswith(".obj")
                 ):  # or name.endswith(".x3d") or name.endswith(".wrl"):
                     # get the full path wich is used to load the obj file
                     fullPath = os.path.join(path, name)
@@ -1316,8 +1279,7 @@ def performScan(context, dependencies_installed, properties):
             # delete the imported object as we copied it and don't need it anymore
             bpy.ops.object.delete({"selected_objects": [importedObject]})
 
-            modifyAndScan(context, dependencies_installed,
-                          properties, fileName)
+            modifyAndScan(context, dependencies_installed, properties, fileName)
     else:
         modifyAndScan(context, dependencies_installed, properties, None)
 
@@ -2321,8 +2283,7 @@ class CUSTOM_UL_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if index == len(context.scene.custom) - 1:
             layout.label(
-                text="Depth: > %.2f m, Speed: %.3f m/s, Density: %.3f kg/m³"
-                % (item.depth, item.speed, item.density)
+                text="Depth: > %.2f m, Speed: %.3f m/s, Density: %.3f kg/m³" % (item.depth, item.speed, item.density)
             )
         else:
             layout.label(
@@ -2385,9 +2346,7 @@ def register():
     missingDependency = None
 
     try:
-        requirementsPath = os.path.join(
-            pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt"
-        )
+        requirementsPath = os.path.join(pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt")
         print("Reading dependencies from {0}".format(requirementsPath))
         requirementsFile = open(requirementsPath, "r")
         requirements = requirementsFile.readlines()
@@ -2427,8 +2386,7 @@ def register():
         return
 
     # load scanner config file
-    configPath = os.path.join(pathlib.Path(
-        __file__).parent.absolute(), "presets.yaml")
+    configPath = os.path.join(pathlib.Path(__file__).parent.absolute(), "presets.yaml")
 
     print("Loading config file from %s ..." % configPath)
 

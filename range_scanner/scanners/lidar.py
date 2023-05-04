@@ -41,9 +41,7 @@ def castRay(
         print("### SUBCAST ###")
         print(origin, direction, maxRange)
 
-    closestHit = generic.getClosestHit(
-        targets, trees, origin, direction, maxRange, debugOutput, debugLines
-    )
+    closestHit = generic.getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debugLines)
 
     if closestHit is not None:
         # the normal is given in local object space, so we need to transform it to global space
@@ -132,9 +130,7 @@ def castRay(
 
                     # the hit location seems to have the color of the reflected surface
                     closestHit.color = reflectedHit.color
-                    closestHit.intensity = material_helper.getSurfaceReflectivity(
-                        reflectedHit.color
-                    )
+                    closestHit.intensity = material_helper.getSurfaceReflectivity(reflectedHit.color)
 
                     closestHit.wasReflected = True
                 else:
@@ -276,9 +272,7 @@ def castRay(
 
                 intensityPassthrough = 0.0
                 if passthroughHit is not None:
-                    intensityPassthrough = material_helper.getSurfaceReflectivity(
-                        passthroughHit.color
-                    )
+                    intensityPassthrough = material_helper.getSurfaceReflectivity(passthroughHit.color)
 
                     # the transmission tells us, which amount of  light goes through the glass
                     # as the ray passes the glass twice, the value is reduced twice
@@ -566,9 +560,9 @@ def performScan(
                 # source: https://github.com/mgschwan/blensor/blob/0b6cca9f189b1e072cfd8aaa6360deeab0b96c61/release/scripts/addons/blensor/scan_interface_pure.py#L9
                 rMin = 0.0
                 if closestHit.distance >= distanceLower:
-                    rMin = reflectivityLower + (
-                        (reflectivityUpper - reflectivityLower) * closestHit.distance
-                    ) / (distanceUpper - distanceLower)
+                    rMin = reflectivityLower + ((reflectivityUpper - reflectivityLower) * closestHit.distance) / (
+                        distanceUpper - distanceLower
+                    )
 
                 delta = 0
 
@@ -636,15 +630,11 @@ def performScan(
                                 relevantDustCloudLength = Ld
 
                             # calculate the transmission loss
-                            alpha = np.exp(
-                                -2 * np.pi * r**2 * n * (relevantDustCloudLength)
-                            )  # eq. (32)
+                            alpha = np.exp(-2 * np.pi * r**2 * n * (relevantDustCloudLength))  # eq. (32)
 
                 surfaceReflectivity *= alpha
 
-                isVisible = (
-                    surfaceReflectivity > rMin
-                )  # relativeSensorPower > minimumRelativePower:
+                isVisible = surfaceReflectivity > rMin  # relativeSensorPower > minimumRelativePower:
 
                 # if the return is not powerful enough, the detector can't see it at all
                 if not isVisible:
@@ -767,9 +757,7 @@ def performScan(
                 fileExporter.exportLAS()
 
             if exportHDF:
-                fileExporter.exportHDF(
-                    fileNameExtra="_frames_%d_to_%d_single" % (firstFrame, lastFrame)
-                )
+                fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_single" % (firstFrame, lastFrame))
 
             if exportCSV:
                 fileExporter.exportCSV()

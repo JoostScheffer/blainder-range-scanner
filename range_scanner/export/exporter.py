@@ -37,9 +37,7 @@ class Exporter:
 
         # map data tuples to arrays
         if exportNoiseData:
-            self.mappedData = np.array(
-                [self.tupleToArrayWithNoise(hit) for hit in data]
-            ).transpose()
+            self.mappedData = np.array([self.tupleToArrayWithNoise(hit) for hit in data]).transpose()
         else:
             self.mappedData = np.array([self.tupleToArray(hit) for hit in data]).transpose()
 
@@ -83,35 +81,25 @@ class Exporter:
         from . import export_las
 
         # export using categoryIDs as source ID
-        export_las.export(
-            self.filePath, self.fileName, self.mappedData, self.exportNoiseData, usePartIDs=False
-        )
+        export_las.export(self.filePath, self.fileName, self.mappedData, self.exportNoiseData, usePartIDs=False)
 
         # export using partIDs as source ID
-        export_las.export(
-            self.filePath, self.fileName, self.mappedData, self.exportNoiseData, usePartIDs=True
-        )
+        export_las.export(self.filePath, self.fileName, self.mappedData, self.exportNoiseData, usePartIDs=True)
 
     def exportHDF(self, fileNameExtra=""):
         from . import export_hdf
 
-        export_hdf.export(
-            self.filePath, self.rawFileName + fileNameExtra, self.mappedData, self.exportNoiseData
-        )
+        export_hdf.export(self.filePath, self.rawFileName + fileNameExtra, self.mappedData, self.exportNoiseData)
 
     def exportCSV(self):
         from . import export_csv
 
-        export_csv.export(
-            self.filePath, self.fileName, self.mappedData.transpose(), self.exportNoiseData
-        )
+        export_csv.export(self.filePath, self.fileName, self.mappedData.transpose(), self.exportNoiseData)
 
     def exportPLY(self):
         from . import export_ply
 
-        export_ply.export(
-            self.filePath, self.fileName, self.mappedData.transpose(), self.exportNoiseData
-        )
+        export_ply.export(self.filePath, self.fileName, self.mappedData.transpose(), self.exportNoiseData)
 
     def exportSegmentedImage(self, exportPascalVoc):
         from . import export_segmented_image

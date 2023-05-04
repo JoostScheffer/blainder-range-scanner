@@ -21,9 +21,7 @@ from . import lidar, sonar
 def updateProgress(job_title, progress):
     length = 20  # modify this to change the length
     block = int(round(length * progress))
-    msg = "\r{0}: [{1}] {2}%".format(
-        job_title, "#" * block + "-" * (length - block), round(progress * 100, 2)
-    )
+    msg = "\r{0}: [{1}] {2}%".format(job_title, "#" * block + "-" * (length - block), round(progress * 100, 2))
     if progress >= 1:
         msg += " DONE\r\n"
     sys.stdout.write(msg)
@@ -73,9 +71,7 @@ def getTargetIndices(targets, debugOutput):
         if "categoryID" not in target:
             # the custom property is not set, fallback is the targets name
             if debugOutput:
-                print(
-                    "WARNING: no categoryID given for target %s! Using name instead." % target.name
-                )
+                print("WARNING: no categoryID given for target %s! Using name instead." % target.name)
             target["categoryID"] = target.name
 
         categoryID = target["categoryID"]
@@ -89,9 +85,7 @@ def getTargetIndices(targets, debugOutput):
             # the custom property is not set
             # in this case, the fallback is the material index for the given point on the mesh
             if debugOutput:
-                print(
-                    "WARNING: no partID given for target %s! Using material instead." % target.name
-                )
+                print("WARNING: no partID given for target %s! Using material instead." % target.name)
 
         else:
             partID = target["partID"]
@@ -157,9 +151,7 @@ def getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debu
         # perform the actual ray casting
         # see: https://docs.blender.org/api/current/mathutils.bvhtree.html#mathutils.bvhtree.BVHTree.ray_cast
         #      https://github.com/blender/blender/blob/master/source/blender/blenlib/BLI_kdopbvh.h#L81
-        location, faceNormal, faceIndex, distance = trees[target][0].ray_cast(
-            origin, direction, closestDistance
-        )
+        location, faceNormal, faceIndex, distance = trees[target][0].ray_cast(origin, direction, closestDistance)
 
         # we use the current closest distance as maximum range, because we don't need to consider geometry which
         # is further away than the current closest hit
@@ -190,9 +182,7 @@ def getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debu
         if debugLines:
             addLine(origin, closestLocation)
 
-        return hit_info.HitInfo(
-            closestLocation, closestFaceNormal, closestFaceIndex, closestDistance, closestTarget
-        )
+        return hit_info.HitInfo(closestLocation, closestFaceNormal, closestFaceIndex, closestDistance, closestTarget)
     else:
         return None
 
@@ -209,9 +199,7 @@ def startScan(context, dependencies_installed, properties, objectName):
     if objectName is None:
         cleanedFileName = removeInvalidCharatersFromFileName(properties.dataFileName)
     else:
-        cleanedFileName = removeInvalidCharatersFromFileName(
-            "%s_%s" % (properties.dataFileName, objectName)
-        )
+        cleanedFileName = removeInvalidCharatersFromFileName("%s_%s" % (properties.dataFileName, objectName))
 
     if not cleanedFileName == properties.dataFileName:
         print("WARNING: File name contains invalid characters. New file name: %s" % cleanedFileName)
@@ -227,11 +215,7 @@ def startScan(context, dependencies_installed, properties, objectName):
                 # - object has some kind of geometry
                 # - is not excluded
                 # - has a material set
-                if (
-                    obj.type == "MESH"
-                    and obj.hide_get() is False
-                    and obj.active_material is not None
-                ):
+                if obj.type == "MESH" and obj.hide_get() is False and obj.active_material is not None:
                     allTargets.append(obj)
 
     if properties.scannerObject is None:
@@ -359,9 +343,7 @@ def startScan(context, dependencies_installed, properties, objectName):
             firstFrame = properties.frameStart  # bpy.context.scene.frame_start
             lastFrame = properties.frameEnd  # bpy.context.scene.frame_end
             frameStep = properties.frameStep  # bpy.context.scene.frame_step
-            frameRate = (
-                properties.frameRate
-            )  # bpy.context.scene.render.fps / bpy.context.scene.render.fps_base
+            frameRate = properties.frameRate  # bpy.context.scene.render.fps / bpy.context.scene.render.fps_base
 
             # calculate the angle which the sensor covers in each frame
             angularFractionPerFrame = properties.rotationsPerSecond / frameRate * (properties.fovX)
@@ -378,10 +360,7 @@ def startScan(context, dependencies_installed, properties, objectName):
 
             angularFractionPerFrame = properties.fovX
 
-        if (
-            properties.scannerType == ScannerType.rotating.name
-            or properties.scannerType == ScannerType.sideScan.name
-        ):
+        if properties.scannerType == ScannerType.rotating.name or properties.scannerType == ScannerType.sideScan.name:
             stepsX = properties.xStepDegree
             stepsY = properties.yStepDegree
         elif properties.scannerType == ScannerType.static.name:
@@ -561,9 +540,7 @@ def startScan(context, dependencies_installed, properties, objectName):
                         fileExporter.exportLAS()
 
                     if properties.exportHDF:
-                        fileExporter.exportHDF(
-                            fileNameExtra="_frames_%d_to_%d_merged" % (firstFrame, lastFrame)
-                        )
+                        fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_merged" % (firstFrame, lastFrame))
 
                     if properties.exportCSV:
                         fileExporter.exportCSV()

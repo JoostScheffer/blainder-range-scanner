@@ -67,10 +67,7 @@ def getTargetMaterials(debugOutput, target):
                     elif node.type == "BSDF_PRINCIPLED":
                         # check if an image texture is connected to the BSDF node
                         connectedLinks = node.inputs["Base Color"].links
-                        if (
-                            len(connectedLinks) > 0
-                            and connectedLinks[0].from_node.type == "TEX_IMAGE"
-                        ):
+                        if len(connectedLinks) > 0 and connectedLinks[0].from_node.type == "TEX_IMAGE":
                             # image texture
                             image = connectedLinks[0].from_node.image
                             texture = Image(image.pixels[:], image.size)
@@ -78,9 +75,7 @@ def getTargetMaterials(debugOutput, target):
                             # retrieve metallic factor
                             metallic = node.inputs["Metallic"].default_value
 
-                            targetMaterials[materialIndex] = MaterialProperty(
-                                None, texture, metallic, 0.0
-                            )
+                            targetMaterials[materialIndex] = MaterialProperty(None, texture, metallic, 0.0)
                             continue
 
                         # no texture, just a simple color

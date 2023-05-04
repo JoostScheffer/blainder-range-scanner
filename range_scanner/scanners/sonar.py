@@ -35,9 +35,7 @@ def castRay(
         print("### SUBCAST ###")
         print(origin, direction, maxRange)
 
-    closestHit = generic.getClosestHit(
-        targets, trees, origin, direction, maxRange, debugOutput, debugLines
-    )
+    closestHit = generic.getClosestHit(targets, trees, origin, direction, maxRange, debugOutput, debugLines)
 
     if closestHit is not None:
         materialProperty = material_helper.getMaterialColorAndMetallic(
@@ -224,9 +222,7 @@ def performScan(
 
         # for each timestep, calculate the traveled distance for normalization
         traveledDistance = math.sqrt(
-            (startLocation.x - origin.x) ** 2
-            + (startLocation.y - origin.y) ** 2
-            + (startLocation.z - origin.z) ** 2
+            (startLocation.x - origin.x) ** 2 + (startLocation.y - origin.y) ** 2 + (startLocation.z - origin.z) ** 2
         )
 
         for index, value in enumerate(depthList):
@@ -386,9 +382,7 @@ def performScan(
 
                             # calculate new direction vector
                             # see: http://www.starkeffects.com/snells-law-vector.shtml
-                            newDirection = n * (
-                                normal.cross(-normal.cross(direction))
-                            ) - normal * np.sqrt(
+                            newDirection = n * (normal.cross(-normal.cross(direction))) - normal * np.sqrt(
                                 1 - (n**2) * (normal.cross(direction) @ normal.cross(direction))
                             )
 
@@ -408,17 +402,9 @@ def performScan(
                             p1 = depthList[layerIndex - 1][2]
                             p2 = depthList[layerIndex][2]
 
-                            denominator = p2 * v2 * np.cos(incidentAngle) + p1 * v1 * np.cos(
-                                refractionAngle
-                            )
+                            denominator = p2 * v2 * np.cos(incidentAngle) + p1 * v1 * np.cos(refractionAngle)
                             transmission = (
-                                4
-                                * p1
-                                * v1
-                                * p2
-                                * v2
-                                * np.cos(incidentAngle)
-                                * np.cos(refractionAngle)
+                                4 * p1 * v1 * p2 * v2 * np.cos(incidentAngle) * np.cos(refractionAngle)
                             ) / denominator**2  # equation (2.42)
 
                             if debugOutput:
@@ -469,9 +455,7 @@ def performScan(
                     closestHit.categoryID = categoryIDs[closestHit.target["categoryID"]]
                     closestHit.partID = partIDs[partIDIndex]
 
-                    noise = noiseAbsoluteOffset + (
-                        closestHit.distance * noiseRelativeOffset / 100.0
-                    )
+                    noise = noiseAbsoluteOffset + (closestHit.distance * noiseRelativeOffset / 100.0)
 
                     if addNoise:
                         # generate some noise
@@ -509,9 +493,7 @@ def performScan(
                         # to simulate sonar, we have to move all values into one plane
                         if sonarKeepRotation:
                             closestHit.location = (
-                                Vector((direction.x, direction.y, 0)).normalized()
-                                * closestHit.distance
-                                + origin
+                                Vector((direction.x, direction.y, 0)).normalized() * closestHit.distance + origin
                             )
                         else:
                             if x > 0:
@@ -590,9 +572,7 @@ def performScan(
                 fileExporter.exportLAS()
 
             if exportHDF:
-                fileExporter.exportHDF(
-                    fileNameExtra="_frames_%d_to_%d_single" % (frameStart, frameEnd)
-                )
+                fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_single" % (frameStart, frameEnd))
 
             if exportCSV:
                 fileExporter.exportCSV()

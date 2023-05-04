@@ -72,8 +72,6 @@ def export(filePath, fileName, data, exportNoiseData):
             )
 
             for hit in data:
-                writer.writerow(
-                    [hit[0], hit[1], hit[2], hit[3], hit[4], hit[5], hit[6], hit[7], hit[8], hit[9]]
-                )
+                writer.writerow([hit[0], hit[1], hit[2], hit[3], hit[4], hit[5], hit[6], hit[7], hit[8], hit[9]])
 
     print("Done.")
