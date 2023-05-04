@@ -1,11 +1,8 @@
 # context.area: VIEW_3D
 
-import importlib
 import os
 import pathlib
 import random
-import subprocess
-import sys
 import time
 from math import radians
 
@@ -31,7 +28,7 @@ from ..scanners import generic
 bl_info = {
     "name": "range_scanner", # name of the add-on
     "description": "Range scanner simulation for Blender", # used for the tooltip and addons list
-    "author": "Lorenzo Neumann", # author of the add-on
+    "author": "Lorenzo Neumann", # original author of the add-on
     "blender": (3, 4, 0), # blender version
     "version": (0, 1, 0), # major, minor, patch
     "location": "View3D > Scanner", # where to find it in the UI

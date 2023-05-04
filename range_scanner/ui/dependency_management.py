@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib
 import os
 import pathlib
@@ -53,7 +55,7 @@ dependencies_installed = False
 
 # def import_module(module_name, global_name=None):
 # make global_name an optional parameter
-def import_module(module_name, global_name=None):
+def import_module(module_name: str, global_name: str | None = None):
     """
     Import a module.
 
@@ -90,9 +92,7 @@ def install_pip():
     still contain PIP_REQ_TRACKER with the now nonexistent path. This is a problem since pip checks if PIP_REQ_TRACKER
     is set and if it is, attempts to use it as temp directory. This would result in an error because the
     directory can't be found. Therefore, PIP_REQ_TRACKER needs to be removed from environment variables.
-    :return:
     """
-
     try:
         # Check if pip is already installed
         subprocess.run([sys.executable, "-m", "pip", "--version"], check=True)
@@ -103,27 +103,42 @@ def install_pip():
         os.environ.pop("PIP_REQ_TRACKER", None)
 
 
-def install_and_import_module(module, importName):
-    """
-    Installs the package through pip and attempts to import the installed module.
-    :param module_name: Module to import.
-    :param package_name: (Optional) Name of the package that needs to be installed. If None it is assumed to be equal
-       to the module_name.
-    :param global_name: (Optional) Name under which the module is imported. If None the module_name will be used.
-       This allows to import under a different name with the same effect as e.g. "import numpy as np" where "np" is
-       the global_name under which the module can be accessed.
-    :raises: subprocess.CalledProcessError and ImportError
-    """
+def install_and_import_module(module: str, importName: str):
+    r"""Installs the package through pip and attempts to import the installed module.
 
-    # Blender disables the loading of user site-packages by default. However, pip will still check them to determine
-    # if a dependency is already installed. This can cause problems if the packages is installed in the user
-    # site-packages and pip deems the requirement satisfied, but Blender cannot import the package from the user
-    # site-packages. Hence, the environment variable PYTHONNOUSERSITE is set to disallow pip from checking the user
-    # site-packages. If the package is not already installed for Blender's Python interpreter, it will then try to.
-    # The paths used by pip can be checked with `subprocess.run([sys.executable, "-m", "site"], check=True)`
+    Parameters
+    ----------
+    module : str
+        Module to import.
+    importName : str
+        Name under which the module is imported. If None the module_name will be used.
+        This allows to import under a different name with the same effect as e.g. "import numpy as np" where "np" is
+        the global_name under which the module can be accessed.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If the installation fails.
+    ImportError
+        If the module can't be imported.
+
+    Notes
+    -----
+    Blender disables the loading of user site-packages by default. However, pip will still check them to determine
+    if a dependency is already installed. This can cause problems if the packages is installed in the user
+    site-packages and pip deems the requirement satisfied, but Blender cannot import the package from the user
+    site-packages. Hence, the environment variable PYTHONNOUSERSITE is set to disallow pip from checking the user
+    site-packages. If the package is not already installed for Blender's Python interpreter, it will then try to.
+    The paths used by pip can be checked with `subprocess.run([sys.executable, "-m", "site"], check=True)`
+    """
 
     # Store the original environment variables
     environ_orig = dict(os.environ)
+
+    # Disable the user site-packages
+    # This is necessary because pip will still check the user site-packages to determine if a package is already
+    # installed. However, Blender can't import from the user site-packages, so pip may deem a requirement satisfied
+    # even though Blender can't import it.
     os.environ["PYTHONNOUSERSITE"] = "1"
 
     try:
@@ -131,6 +146,9 @@ def install_and_import_module(module, importName):
 
         # Try to install the package. This may fail with subprocess.CalledProcessError
         subprocess.run([sys.executable, "-m", "pip", "install", module], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {module}")
+        print(e)
     finally:
         # Always restore the original environment variables
         os.environ.clear()
@@ -212,4 +230,3 @@ class EXAMPLE_PT_DEPENDENCIES_PANEL(MAIN_PANEL, Panel):
             layout.label(text=line)
 
         layout.operator("wm.install_dependencies")
-
